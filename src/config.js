@@ -22,7 +22,13 @@ if (!['mariadb', 'firebird'].includes(kind)) {
 }
 
 const defaultDataDirectory = fileURLToPath(new URL('../data/', import.meta.url));
-const smsMode = (process.env.SMS_MODE || 'mock').toLowerCase();
+const rawMessageMode = (process.env.MESSAGE_MODE || process.env.SMS_MODE || 'mock').toLowerCase();
+const messageMode = rawMessageMode === 'seven-rcs' ? 'seven' : rawMessageMode;
+const smsConsentMarker = process.env.SMS_CONSENT_MARKER_TEXT
+  || process.env.CONSENT_MARKER_TEXT
+  || 'SMS-Erinnerung erlaubt';
+const rcsConsentMarker = process.env.RCS_CONSENT_MARKER_TEXT
+  || 'RCS-Erinnerung mit SMS-Fallback erlaubt';
 
 export const config = Object.freeze({
   app: {
@@ -39,7 +45,9 @@ export const config = Object.freeze({
     clientPath: process.env.DB_CLIENT_PATH || 'C:\\MEDOFF\\mariadb\\bin\\mysql.exe',
   },
   consent: {
-    markerText: process.env.CONSENT_MARKER_TEXT || 'SMS-Erinnerung erlaubt',
+    markerText: smsConsentMarker,
+    smsMarkerText: smsConsentMarker,
+    rcsMarkerText: rcsConsentMarker,
   },
   integration: {
     keyFile: process.env.MO_INTEGRATION_KEY_FILE || `${defaultDataDirectory}medical-office-integration.key`,
@@ -52,8 +60,14 @@ export const config = Object.freeze({
     historyRetentionDays: integer('HISTORY_RETENTION_DAYS', 90, { min: 1, max: 365 }),
   },
   sms: {
-    mode: smsMode,
+    mode: messageMode,
     template: 'Praxis Recker: Wir erinnern Sie an Ihren Termin am {datum} um {uhrzeit} Uhr. Bei Rückfragen melden Sie sich bitte telefonisch.',
+    apiKey: process.env.SEVEN_API_KEY || '',
+    rcsAgentId: process.env.SEVEN_RCS_AGENT_ID || '',
+    sender: process.env.SEVEN_SMS_SENDER || '',
+    requestTimeoutMs: integer('SEVEN_REQUEST_TIMEOUT_MS', 10_000, { min: 1_000, max: 60_000 }),
+    rcsTtlMinutes: integer('SEVEN_RCS_TTL_MINUTES', 60, { min: 1, max: 10_080 }),
+    statusSyncMinutes: integer('SEVEN_STATUS_SYNC_MINUTES', 5, { min: 1, max: 1_440 }),
   },
   limits: {
     maxRangeDays: integer('MAX_RANGE_DAYS', 31, { min: 1, max: 92 }),
@@ -72,14 +86,31 @@ export function assertRuntimeConfig() {
   if (!config.database.user || !config.database.password) {
     throw new Error('DB_USER und DB_PASSWORD müssen in der lokalen .env-Datei gesetzt sein.');
   }
-  if (!config.consent.markerText.trim()) {
-    throw new Error('CONSENT_MARKER_TEXT darf nicht leer sein.');
+  for (const [name, value] of [
+    ['SMS_CONSENT_MARKER_TEXT', config.consent.smsMarkerText],
+    ['RCS_CONSENT_MARKER_TEXT', config.consent.rcsMarkerText],
+  ]) {
+    if (!value.trim()) throw new Error(`${name} darf nicht leer sein.`);
+    if (!/^[\p{L}\p{N} ._-]{1,80}$/u.test(value)) {
+      throw new Error(`${name} enthält unzulässige Zeichen.`);
+    }
   }
-  if (!/^[\p{L}\p{N} ._-]{1,80}$/u.test(config.consent.markerText)) {
-    throw new Error('CONSENT_MARKER_TEXT enthält unzulässige Zeichen.');
+  if (config.consent.smsMarkerText === config.consent.rcsMarkerText) {
+    throw new Error('SMS- und RCS-Einwilligungsmarker müssen verschieden sein.');
   }
-  if (config.sms.mode !== 'mock') {
-    throw new Error('Aktuell ist ausschließlich SMS_MODE=mock erlaubt. Ein echter Versand ist bewusst gesperrt.');
+  if (!['mock', 'seven'].includes(config.sms.mode)) {
+    throw new Error('MESSAGE_MODE muss mock oder seven sein.');
+  }
+  if (config.sms.mode === 'seven') {
+    if (config.sms.apiKey.length < 16) throw new Error('SEVEN_API_KEY fehlt oder ist zu kurz.');
+    if (!/^[A-Za-z0-9._@-]{1,64}$/.test(config.sms.rcsAgentId)) {
+      throw new Error('SEVEN_RCS_AGENT_ID fehlt oder enthält unzulässige Zeichen.');
+    }
+    const validSender = /^\d{1,16}$/.test(config.sms.sender)
+      || /^[A-Za-z0-9]{1,11}$/.test(config.sms.sender);
+    if (!validSender) {
+      throw new Error('SEVEN_SMS_SENDER muss bis zu 11 alphanumerische oder 16 numerische Zeichen haben.');
+    }
   }
 }
 

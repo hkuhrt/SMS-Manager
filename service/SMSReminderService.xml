@@ -1,7 +1,7 @@
 <service>
   <id>PraxisReckerSMSReminder</id>
   <name>Praxis Recker SMS Reminder</name>
-  <description>Lokale, lesende MEDICAL-OFFICE-Terminerinnerung im sicheren Testmodus.</description>
+  <description>Lokale, lesende MEDICAL-OFFICE-Terminerinnerung mit RCS-/SMS-Versand.</description>
   <executable>%BASE%\runtime\node.exe</executable>
   <arguments>--env-file=&quot;%BASE%\.env&quot; &quot;%BASE%\src\server.js&quot;</arguments>
   <workingdirectory>%BASE%</workingdirectory>

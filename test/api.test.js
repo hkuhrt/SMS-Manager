@@ -37,7 +37,11 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     mobileNormalized: '+491701234567',
     mobileMasked: '•••• 4567',
     hasConsent: true,
+    hasSmsConsent: true,
+    hasRcsConsent: false,
     markerConfigured: true,
+    smsMarkerConfigured: true,
+    rcsMarkerConfigured: true,
     appointments: [appointment],
   };
   const dataSource = {
@@ -68,10 +72,22 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
   const selectionStore = new SelectionStore({ ttlSeconds: 300 });
   const testConfig = {
     app: { host: '127.0.0.1', port: 4173 },
-    consent: { markerText: 'SMS-Erinnerung erlaubt' },
+    consent: {
+      markerText: 'SMS-Erinnerung erlaubt',
+      smsMarkerText: 'SMS-Erinnerung erlaubt',
+      rcsMarkerText: 'RCS-Erinnerung mit SMS-Fallback erlaubt',
+    },
     integration: { sourceFreshnessSeconds: 30 },
     storage: { historyRetentionDays: 90 },
-    sms: { mode: 'mock', template: 'Praxis Recker: Termin am {datum} um {uhrzeit} Uhr.' },
+    sms: {
+      mode: 'mock',
+      template: 'Praxis Recker: Termin am {datum} um {uhrzeit} Uhr.',
+      apiKey: '',
+      rcsAgentId: '',
+      sender: '',
+      rcsTtlMinutes: 60,
+      statusSyncMinutes: 5,
+    },
     limits: {
       requestsPerMinute: 100,
       requestBodyBytes: 16_384,
@@ -81,6 +97,8 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
       singlePatientLookaheadDays: 365,
     },
   };
+  let messagingTestCalls = 0;
+  let messagingTestShouldFail = false;
   const server = createHttpApplication({
     config: testConfig,
     dataSource,
@@ -88,6 +106,25 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     reminderService,
     selectionStore,
     integrationKey: 'integration-secret',
+    messagingConnectionTester: async () => {
+      messagingTestCalls += 1;
+      if (messagingTestShouldFail) throw new Error('provider secret detail');
+      return {
+        reachable: true,
+        journalAccessible: true,
+        agentFound: true,
+        agent: {
+          id: 'praxis-agent',
+          displayName: 'Praxis Recker',
+          status: 'test',
+          isGeneric: false,
+        },
+        testReady: true,
+        productionReady: false,
+        smsPermissionTested: false,
+        checkedAt: '2026-10-23T18:30:00.000Z',
+      };
+    },
     updateStatusReader: async () => ({
       currentVersion: '0.3.0',
       latestVersion: '0.3.0',
@@ -106,6 +143,126 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     const updateStatusResponse = await fetch(`${base}/api/update-status`);
     assert.equal(updateStatusResponse.status, 200);
     assert.equal((await updateStatusResponse.json()).currentVersion, '0.3.0');
+
+    const initialSettingsResponse = await fetch(`${base}/api/settings`);
+    assert.equal(initialSettingsResponse.status, 200);
+    const initialSettings = await initialSettingsResponse.json();
+    assert.equal(initialSettings.preferences.defaultRangeDays, 7);
+    assert.equal(initialSettings.preferences.appointmentsPerPage, 20);
+    assert.equal(initialSettings.preferences.preferredZoneId, null);
+    assert.equal(initialSettings.preferences.autoLoadAppointments, false);
+    assert.equal(initialSettings.system.loopbackOnly, true);
+    assert.equal(Object.hasOwn(initialSettings.system, 'password'), false);
+    assert.equal(Object.hasOwn(initialSettings.system, 'apiKey'), false);
+    assert.equal(initialSettings.system.rcsConsentMarker, 'RCS-Erinnerung mit SMS-Fallback erlaubt');
+    assert.equal(initialSettings.system.messaging.mode, 'mock');
+    assert.equal(initialSettings.system.messaging.apiKeyConfigured, false);
+    assert.equal(initialSettings.system.messaging.fallback, 'sms');
+    assert.equal(Object.hasOwn(initialSettings.system.messaging, 'apiKey'), false);
+
+    const messagingTestWithoutCsrf = await fetch(`${base}/api/messaging/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: base },
+      body: '{}',
+    });
+    assert.equal(messagingTestWithoutCsrf.status, 403);
+    assert.equal(messagingTestCalls, 0);
+
+    const messagingTestResponse = await fetch(`${base}/api/messaging/test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: '{}',
+    });
+    assert.equal(messagingTestResponse.status, 200);
+    const messagingConnection = (await messagingTestResponse.json()).connection;
+    assert.equal(messagingTestCalls, 1);
+    assert.equal(messagingConnection.agent.status, 'test');
+    assert.equal(messagingConnection.testReady, true);
+    assert.equal(Object.hasOwn(messagingConnection, 'apiKey'), false);
+
+    messagingTestShouldFail = true;
+    const failedMessagingTestResponse = await fetch(`${base}/api/messaging/test`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: '{}',
+    });
+    assert.equal(failedMessagingTestResponse.status, 502);
+    const failedMessagingTest = await failedMessagingTestResponse.json();
+    assert.equal(messagingTestCalls, 2);
+    assert.match(failedMessagingTest.error, /seven-Verbindung/);
+    assert.equal(failedMessagingTest.error.includes('provider secret detail'), false);
+
+    const settingsWithoutCsrf = await fetch(`${base}/api/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Origin: base },
+      body: JSON.stringify({
+        defaultRangeDays: 14,
+        appointmentsPerPage: 50,
+        preferredZoneId: null,
+        autoLoadAppointments: true,
+      }),
+    });
+    assert.equal(settingsWithoutCsrf.status, 403);
+
+    const invalidSettings = await fetch(`${base}/api/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: JSON.stringify({
+        defaultRangeDays: 99,
+        appointmentsPerPage: 25,
+        preferredZoneId: 999,
+        autoLoadAppointments: 'ja',
+      }),
+    });
+    assert.equal(invalidSettings.status, 400);
+
+    const unknownZoneSettings = await fetch(`${base}/api/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: JSON.stringify({
+        defaultRangeDays: 7,
+        appointmentsPerPage: 20,
+        preferredZoneId: 999,
+        autoLoadAppointments: false,
+      }),
+    });
+    assert.equal(unknownZoneSettings.status, 400);
+
+    const saveSettings = await fetch(`${base}/api/settings`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: JSON.stringify({
+        defaultRangeDays: 14,
+        appointmentsPerPage: 50,
+        preferredZoneId: null,
+        autoLoadAppointments: true,
+      }),
+    });
+    assert.equal(saveSettings.status, 200);
+    const savedSettings = (await saveSettings.json()).preferences;
+    assert.equal(savedSettings.defaultRangeDays, 14);
+    assert.equal(savedSettings.appointmentsPerPage, 50);
+    assert.equal(savedSettings.autoLoadAppointments, true);
 
     const templatesResponse = await fetch(`${base}/api/templates`);
     assert.equal(templatesResponse.status, 200);

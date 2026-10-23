@@ -9,21 +9,36 @@ function sqlString(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-function markerConfiguredSql() {
+function markerConfiguredSql(markerText) {
   return `EXISTS(
     SELECT 1 FROM ${schema}.markier marker
-    WHERE TRIM(marker.FText) = ${sqlString(config.consent.markerText)}
+    WHERE TRIM(marker.FText) = ${sqlString(markerText)}
   )`;
 }
 
-function hasConsentSql(patientAlias = 'p') {
+function hasConsentSql(markerText, patientAlias = 'p') {
   return `EXISTS(
     SELECT 1
     FROM ${schema}.patmark pm
     INNER JOIN ${schema}.markier marker ON marker.FSurogat = pm.FMarkiernr
     WHERE pm.FPatnr = ${patientAlias}.FSurogat
-      AND TRIM(marker.FText) = ${sqlString(config.consent.markerText)}
+      AND TRIM(marker.FText) = ${sqlString(markerText)}
   )`;
+}
+
+function consentFields(row) {
+  const hasSmsConsent = Boolean(Number(row.hasSmsConsent ?? row.hasConsent));
+  const hasRcsConsent = Boolean(Number(row.hasRcsConsent));
+  const smsMarkerConfigured = Boolean(Number(row.smsMarkerConfigured ?? row.markerConfigured));
+  const rcsMarkerConfigured = Boolean(Number(row.rcsMarkerConfigured));
+  return {
+    hasSmsConsent,
+    hasRcsConsent,
+    hasConsent: hasSmsConsent || hasRcsConsent,
+    smsMarkerConfigured,
+    rcsMarkerConfigured,
+    markerConfigured: smsMarkerConfigured || rcsMarkerConfigured,
+  };
 }
 
 function executeJsonQuery(selectSql) {
@@ -107,8 +122,7 @@ function mapReminderContext(row) {
     mobile,
     mobileNormalized: normalizeMobile(mobile),
     mobileMasked: maskPhone(mobile),
-    hasConsent: Boolean(Number(row.hasConsent)),
-    markerConfigured: Boolean(Number(row.markerConfigured)),
+    ...consentFields(row),
     appointment: mapAppointment(row),
   };
 }
@@ -120,7 +134,8 @@ export async function databaseHealth() {
        'version', VERSION(),
        'databaseName', DATABASE(),
        'port', @@port,
-       'markerConfigured', ${markerConfiguredSql()}
+       'smsMarkerConfigured', ${markerConfiguredSql(config.consent.smsMarkerText)},
+       'rcsMarkerConfigured', ${markerConfiguredSql(config.consent.rcsMarkerText)}
      )`,
   );
   return rows[0];
@@ -155,8 +170,10 @@ export async function listAppointments({ from, to, zoneId, limit }) {
        'firstName', NULLIF(TRIM(p.FVorname), ''),
        'lastName', NULLIF(TRIM(p.FNachname), ''),
        'mobile', NULLIF(TRIM(p.FTelefonmobil), ''),
-       'hasConsent', ${hasConsentSql('p')},
-       'markerConfigured', ${markerConfiguredSql()}
+       'hasSmsConsent', ${hasConsentSql(config.consent.smsMarkerText, 'p')},
+       'hasRcsConsent', ${hasConsentSql(config.consent.rcsMarkerText, 'p')},
+       'smsMarkerConfigured', ${markerConfiguredSql(config.consent.smsMarkerText)},
+       'rcsMarkerConfigured', ${markerConfiguredSql(config.consent.rcsMarkerText)}
      )
      FROM ${schema}.termin t
      LEFT JOIN ${schema}.patstamm p ON p.FSurogat = t.FPatnr
@@ -178,8 +195,7 @@ export async function listAppointments({ from, to, zoneId, limit }) {
       hasPatient: Boolean(row.patientNumber),
       hasMobile: Boolean(mobileNormalized),
       mobileMasked: maskPhone(row.mobile),
-      hasConsent: Boolean(Number(row.hasConsent)),
-      markerConfigured: Boolean(Number(row.markerConfigured)),
+      ...consentFields(row),
     };
   });
   return { appointments, truncated };
@@ -193,8 +209,10 @@ export async function getPatientReminderContext(patientNumber, from, to) {
        'firstName', NULLIF(TRIM(p.FVorname), ''),
        'lastName', NULLIF(TRIM(p.FNachname), ''),
        'mobile', NULLIF(TRIM(p.FTelefonmobil), ''),
-       'hasConsent', ${hasConsentSql('p')},
-       'markerConfigured', ${markerConfiguredSql()}
+       'hasSmsConsent', ${hasConsentSql(config.consent.smsMarkerText, 'p')},
+       'hasRcsConsent', ${hasConsentSql(config.consent.rcsMarkerText, 'p')},
+       'smsMarkerConfigured', ${markerConfiguredSql(config.consent.smsMarkerText)},
+       'rcsMarkerConfigured', ${markerConfiguredSql(config.consent.rcsMarkerText)}
      )
      FROM ${schema}.patstamm p
      WHERE p.FSurogat = ${patientNumber}
@@ -231,8 +249,7 @@ export async function getPatientReminderContext(patientNumber, from, to) {
     mobile,
     mobileNormalized: normalizeMobile(mobile),
     mobileMasked: maskPhone(mobile),
-    hasConsent: Boolean(Number(patient.hasConsent)),
-    markerConfigured: Boolean(Number(patient.markerConfigured)),
+    ...consentFields(patient),
     appointments: appointmentRows.map(mapAppointment),
   };
 }
@@ -257,8 +274,10 @@ export async function getReminderContextsByAppointmentIds(appointmentIds) {
        'firstName', NULLIF(TRIM(p.FVorname), ''),
        'lastName', NULLIF(TRIM(p.FNachname), ''),
        'mobile', NULLIF(TRIM(p.FTelefonmobil), ''),
-       'hasConsent', ${hasConsentSql('p')},
-       'markerConfigured', ${markerConfiguredSql()}
+       'hasSmsConsent', ${hasConsentSql(config.consent.smsMarkerText, 'p')},
+       'hasRcsConsent', ${hasConsentSql(config.consent.rcsMarkerText, 'p')},
+       'smsMarkerConfigured', ${markerConfiguredSql(config.consent.smsMarkerText)},
+       'rcsMarkerConfigured', ${markerConfiguredSql(config.consent.rcsMarkerText)}
      )
      FROM ${schema}.termin t
      INNER JOIN ${schema}.patstamm p ON p.FSurogat = t.FPatnr

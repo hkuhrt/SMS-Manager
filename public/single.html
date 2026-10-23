@@ -7,81 +7,49 @@
     <meta name="referrer" content="no-referrer" />
     <title>Patientenerinnerung · Praxis Recker</title>
     <link rel="icon" type="image/png" href="/assets/praxis-sabrina-recker-logo.png" />
-    <link rel="stylesheet" href="/styles.css?v=20261023-3" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-9" />
   </head>
-  <body class="single-page">
-    <header class="app-header single-header">
-      <div class="brand-row">
-        <a href="/" aria-label="Zur Kalenderübersicht">
-          <img class="practice-logo" src="/assets/praxis-sabrina-recker-logo.png" alt="Frauenarztpraxis Sabrina Recker" width="600" height="234" />
-        </a>
-        <div class="status-stack">
-          <span class="mode-badge">Testmodus · kein SMS-Versand</span>
-          <a class="back-link" href="/">Zur Kalenderübersicht</a>
-        </div>
-      </div>
+  <body class="focused-page">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" /></symbol>
+      <symbol id="icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></symbol>
+      <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
+    </svg>
+    <header class="focus-header">
+      <a href="/" aria-label="Zur Terminübersicht"><img class="practice-logo" src="/assets/praxis-sabrina-recker-logo.png" alt="Frauenarztpraxis Sabrina Recker" width="600" height="234" /></a>
+      <div class="focus-header-copy"><span class="focus-dot"></span><span>Sichere Patientenübergabe aus MEDICAL OFFICE</span></div>
+      <span class="focus-mode">RCS / SMS</span>
     </header>
 
-    <main class="single-main">
+    <main class="focused-main">
       <section class="single-panel" aria-labelledby="single-title">
-        <div class="single-intro">
-          <p class="section-kicker">Aus MEDICAL OFFICE übernommen</p>
-          <h1 id="single-title">Eine Erinnerung vorbereiten</h1>
-          <p>Prüfen Sie Patientin, Termin und Vorschau. Erst Ihre Bestätigung löst den Testvorgang aus.</p>
-        </div>
-
+        <div class="single-intro"><p class="section-kicker">Einzelne Erinnerung</p><h1 id="single-title">Patientin und Termin prüfen</h1><p>Erst Ihre ausdrückliche Bestätigung löst den Versandvorgang aus.</p></div>
         <div id="single-loading" class="single-loading" aria-live="polite">Patientendaten werden sicher geladen …</div>
         <div id="single-error" class="message error single-message" hidden></div>
-
         <div id="single-content" hidden>
           <article class="patient-card">
-            <div>
-              <span class="card-label">Ausgewählte Patientin</span>
-              <strong id="single-patient">–</strong>
-            </div>
-            <div>
-              <span class="card-label">Mobilnummer</span>
-              <strong id="single-mobile">–</strong>
-            </div>
-            <div>
-              <span class="card-label">SMS-Freigabe</span>
-              <strong id="single-consent">–</strong>
-            </div>
+            <div><span class="card-label">Ausgewählte Patientin</span><strong id="single-patient">–</strong></div>
+            <div><span class="card-label">Mobilnummer</span><strong id="single-mobile">–</strong></div>
+            <div><span class="card-label">Versandfreigabe</span><strong id="single-consent">–</strong></div>
           </article>
-
           <div id="single-reasons" class="eligibility-reasons" hidden></div>
-
-          <fieldset id="appointment-fieldset" class="appointment-options">
-            <legend>Termin auswählen</legend>
-            <div id="single-appointments"></div>
-          </fieldset>
-
-          <section class="single-preview" aria-labelledby="single-preview-title">
-            <span class="card-label">SMS-Vorschau</span>
-            <h2 id="single-preview-title">Neutrale Terminerinnerung</h2>
-            <p id="single-preview-text">–</p>
-          </section>
-
-          <div class="single-actions">
-            <button id="single-cancel" class="button button-secondary" type="button">Abbrechen</button>
-            <button id="single-send" class="button button-primary" type="button" disabled>Testversand verbindlich bestätigen</button>
-          </div>
-          <p class="provider-note">Im Testmodus wird keine SMS übertragen. Der Vorgang wird ausschließlich lokal protokolliert.</p>
+          <fieldset id="appointment-fieldset" class="appointment-options"><legend>Termin auswählen</legend><div id="single-appointments"></div></fieldset>
+          <section class="single-preview" aria-labelledby="single-preview-title"><span class="card-label">Nachrichtenvorschau</span><h2 id="single-preview-title">Neutrale Terminerinnerung</h2><p id="single-preview-text">–</p></section>
+          <div class="single-actions"><button id="single-cancel" class="button button-secondary" type="button">Abbrechen</button><button id="single-send" class="button button-primary" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg>Versand prüfen</button></div>
+          <p class="provider-note">Der freigegebene Kanal wird serverseitig bestimmt: RCS mit SMS-Fallback oder ausschließlich SMS.</p>
         </div>
-
-        <div id="single-success" class="success-panel" hidden>
-          <span class="success-icon" aria-hidden="true">✓</span>
-          <h2>Testversand wurde simuliert</h2>
-          <p>Es wurde keine echte SMS versendet. Der Testvorgang steht jetzt in der lokalen Historie.</p>
-          <a class="button button-primary" href="/">Zur Kalenderübersicht</a>
-        </div>
+        <div id="single-success" class="success-panel" hidden><span class="success-icon" aria-hidden="true">✓</span><h2>Versand verarbeitet</h2><p>Der Vorgang steht jetzt im lokalen Protokoll.</p><a class="button button-primary" href="/">Zur Terminübersicht</a></div>
       </section>
     </main>
 
-    <footer>
-      <span>Praxis Recker · interne Anwendung</span>
-      <span>Patientendaten bleiben auf diesem Rechner</span>
-    </footer>
-    <script type="module" src="/single.js?v=20261023-2"></script>
+    <dialog class="app-dialog confirm-dialog" id="single-confirm-dialog" aria-labelledby="single-confirm-title">
+      <form method="dialog" class="dialog-shell">
+        <header class="dialog-header"><span class="dialog-icon"><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg></span><div><p class="section-kicker">Letzte Prüfung</p><h2 id="single-confirm-title">Versand bestätigen</h2><p>Bitte kontrollieren Sie die Angaben ein letztes Mal.</p></div><button class="icon-button" type="submit" value="cancel" aria-label="Prüfdialog schließen"><svg class="icon" aria-hidden="true"><use href="#icon-close" /></svg></button></header>
+        <div class="single-confirm-summary" id="single-confirm-summary"></div>
+        <p class="dialog-error" id="single-confirm-error" role="alert" hidden></p>
+        <footer class="dialog-actions"><button class="button button-secondary" type="submit" value="cancel">Zurück</button><button class="button button-primary" id="single-final-send" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-send" /></svg><span>Nachricht jetzt senden</span></button></footer>
+      </form>
+    </dialog>
+    <script type="module" src="/single.js?v=20261023-3"></script>
   </body>
 </html>

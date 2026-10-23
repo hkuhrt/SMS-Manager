@@ -1,5 +1,4 @@
 const elements = {
-  connection: document.querySelector('#connection'),
   history: document.querySelector('#history-list'),
   refresh: document.querySelector('#history-refresh'),
 };
@@ -20,30 +19,22 @@ async function api(path) {
   return body;
 }
 
-async function checkConnection() {
-  try {
-    const result = await api('/api/health');
-    const marker = result.markerConfigured ? '' : ' · Freigabemarker fehlt';
-    elements.connection.className = `connection ${result.markerConfigured ? 'online' : 'warning'}`;
-    elements.connection.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>${escapeHtml(result.database)} · MariaDB ${escapeHtml(result.version)} · nur lesen${marker}</span>`;
-  } catch (error) {
-    elements.connection.className = 'connection offline';
-    elements.connection.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>${escapeHtml(error.message)}</span>`;
-  }
-}
-
 async function loadHistory() {
   elements.refresh.disabled = true;
   elements.refresh.querySelector('span').textContent = 'Lädt …';
   try {
     const { history, retentionDays } = await api('/api/history?limit=100');
     if (!history.length) {
-      elements.history.innerHTML = `<p class="history-empty">Noch keine Testvorgänge vorhanden.</p><p class="history-retention">Einträge werden nach ${retentionDays} Tagen automatisch gelöscht.</p>`;
+      elements.history.innerHTML = `<p class="history-empty">Noch keine Versandvorgänge vorhanden.</p><p class="history-retention">Einträge werden nach ${retentionDays} Tagen automatisch gelöscht.</p>`;
       return;
     }
     const statusLabel = (entry) => {
       if (entry.status === 'simulated') return 'Test erfolgreich';
       if (entry.status === 'sent') return 'SMS gesendet';
+      if (entry.status === 'accepted') return 'Vom Anbieter angenommen';
+      if (entry.status === 'delivered') return 'Zugestellt';
+      if (entry.status === 'read') return 'Gelesen';
+      if (entry.status === 'unknown') return 'Status wird geklärt';
       if (entry.status === 'failed') return 'Fehlgeschlagen';
       return entry.status;
     };
@@ -52,6 +43,7 @@ async function loadHistory() {
         <div><strong>Termin ${entry.appointmentId}</strong><span>${escapeHtml(entry.phoneMasked || 'Nummer maskiert')}</span></div>
         <div class="history-flags">
           <span class="badge ${entry.status === 'failed' ? 'missing' : ''}">${entry.status === 'failed' ? '<svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>' : ''}${escapeHtml(statusLabel(entry))}</span>
+          ${entry.channel ? `<span class="review-flag">${escapeHtml(entry.channel.toUpperCase())}</span>` : ''}
           ${entry.isDemo ? '<span class="review-flag demo"><svg class="icon" aria-hidden="true"><use href="#icon-flask"></use></svg>Demo</span>' : ''}
           ${entry.isRepeat ? '<span class="review-flag repeat"><svg class="icon" aria-hidden="true"><use href="#icon-repeat"></use></svg>Wiederholung</span>' : ''}
         </div>
@@ -66,4 +58,4 @@ async function loadHistory() {
 }
 
 elements.refresh.addEventListener('click', loadHistory);
-await Promise.all([checkConnection(), loadHistory()]);
+await loadHistory();

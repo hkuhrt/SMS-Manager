@@ -1,4 +1,6 @@
-import { renderNeutralReminder } from './validation.js';
+import { randomUUID } from 'node:crypto';
+import { ProviderDeliveryUnknownError } from './sms-provider.js';
+import { assertSingleSmsFallback, renderNeutralReminder } from './validation.js';
 
 export class ReminderConflictError extends Error {
   constructor(message, details = []) {
@@ -11,7 +13,9 @@ export class ReminderConflictError extends Error {
 
 function eligibilityProblem(context) {
   if (!context) return 'Termin wurde nicht gefunden.';
-  if (!context.hasConsent) return 'Der Marker „SMS-Erinnerung erlaubt“ ist nicht gesetzt.';
+  if (!(context.hasRcsConsent || context.hasSmsConsent || context.hasConsent)) {
+    return 'Weder der RCS- noch der SMS-Einwilligungsmarker ist gesetzt.';
+  }
   if (!context.mobileNormalized) return 'Es ist keine gültige Mobilnummer hinterlegt.';
   if (!context.appointment?.date || !/^\d{2}:\d{2}/.test(context.appointment.time || '')) {
     return 'Der Termin hat kein gültiges Datum oder keine gültige Uhrzeit.';
@@ -26,6 +30,13 @@ export class ReminderService {
     this.provider = provider;
     this.template = template;
     this.mode = mode;
+    this.deliverySyncStatus = {
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      lastErrorAt: null,
+      lastChecked: 0,
+      lastUpdated: 0,
+    };
   }
 
   async send({
@@ -92,33 +103,47 @@ export class ReminderService {
         const appointmentId = uniqueIds[index];
         const context = byId.get(appointmentId);
         const message = renderNeutralReminder(template, context.appointment);
+        assertSingleSmsFallback(message);
+        const preferredChannel = context.hasRcsConsent ? 'rcs' : 'sms';
+        const clientReference = `reminder-${randomUUID()}`;
         try {
           const providerResult = await this.provider.send({
             phone: context.mobileNormalized,
             message,
+            preferredChannel,
+            clientReference,
             appointmentId,
           });
           const status = providerResult.status || (this.mode === 'mock' ? 'simulated' : 'sent');
-          items.push({ appointmentId, status, isRepeat: repeatIds.has(appointmentId) });
+          const channel = providerResult.channel || preferredChannel;
+          items.push({ appointmentId, status, channel, isRepeat: repeatIds.has(appointmentId) });
           this.historyStore.recordItemResult(reservation.requestId, {
             appointmentId,
             patientNumber: context.patientNumber,
             phone: context.mobileNormalized,
             status,
             providerReference: providerResult.providerReference,
+            providerStatus: providerResult.providerStatus,
+            clientReference,
+            channel,
             source,
             mode: this.mode,
             isDemo: Boolean(context.isDemo || context.appointment?.isDemo),
             isRepeat: repeatIds.has(appointmentId),
           });
-        } catch {
-          items.push({ appointmentId, status: 'failed', isRepeat: repeatIds.has(appointmentId) });
+        } catch (error) {
+          const deliveryUnknown = error instanceof ProviderDeliveryUnknownError || error?.deliveryUnknown === true;
+          const status = deliveryUnknown ? 'unknown' : 'failed';
+          items.push({ appointmentId, status, channel: preferredChannel, isRepeat: repeatIds.has(appointmentId) });
           this.historyStore.recordItemResult(reservation.requestId, {
             appointmentId,
             patientNumber: context.patientNumber,
             phone: context.mobileNormalized,
-            status: 'failed',
+            status,
             providerReference: null,
+            providerStatus: deliveryUnknown ? 'UNKNOWN' : 'REJECTED',
+            clientReference,
+            channel: preferredChannel,
             source,
             mode: this.mode,
             isDemo: Boolean(context.isDemo || context.appointment?.isDemo),
@@ -130,13 +155,15 @@ export class ReminderService {
           break;
         }
       }
-      const sent = items.filter((item) => item.status === 'simulated' || item.status === 'sent').length;
+      const sent = items.filter((item) => ['simulated', 'sent', 'accepted', 'delivered', 'read'].includes(item.status)).length;
+      const unknown = items.filter((item) => item.status === 'unknown').length;
       const failed = items.filter((item) => item.status === 'failed').length;
       const skipped = items.filter((item) => item.status === 'skipped').length;
       const response = {
         requestId: reservation.requestId,
         mode: this.mode,
         sent,
+        unknown,
         failed,
         skipped,
         items,
@@ -149,5 +176,43 @@ export class ReminderService {
       this.historyStore.abandonRequest(reservation.requestId);
       throw error;
     }
+  }
+
+  async syncDeliveryStatuses() {
+    const attemptedAt = new Date().toISOString();
+    this.deliverySyncStatus.lastAttemptAt = attemptedAt;
+    try {
+      if (typeof this.provider.syncStatuses !== 'function') {
+        this.deliverySyncStatus = {
+          ...this.deliverySyncStatus,
+          lastSuccessAt: attemptedAt,
+          lastErrorAt: null,
+          lastChecked: 0,
+          lastUpdated: 0,
+        };
+        return { checked: 0, updated: 0 };
+      }
+      const records = this.historyStore.listPendingProviderResults();
+      const updates = records.length ? await this.provider.syncStatuses(records) : [];
+      let updated = 0;
+      for (const update of updates) {
+        if (this.historyStore.updateProviderResult(update)) updated += 1;
+      }
+      this.deliverySyncStatus = {
+        ...this.deliverySyncStatus,
+        lastSuccessAt: new Date().toISOString(),
+        lastErrorAt: null,
+        lastChecked: records.length,
+        lastUpdated: updated,
+      };
+      return { checked: records.length, updated };
+    } catch (error) {
+      this.deliverySyncStatus.lastErrorAt = new Date().toISOString();
+      throw error;
+    }
+  }
+
+  getDeliverySyncStatus() {
+    return { ...this.deliverySyncStatus };
   }
 }

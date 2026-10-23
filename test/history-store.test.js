@@ -113,3 +113,110 @@ test('verwaltet lokale SMS-Vorlagen und schützt die Standardvorlage', async () 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('legt sichere App-Einstellungen an und speichert sie appweit', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sms-reminder-settings-'));
+  const store = await createHistoryStore({ dataDirectory: directory, retentionDays: 90, hashKey: 'settings-key' });
+  try {
+    assert.deepEqual(store.getSettings(), {
+      defaultRangeDays: 7,
+      appointmentsPerPage: 20,
+      preferredZoneId: null,
+      autoLoadAppointments: false,
+      updatedAt: store.getSettings().updatedAt,
+    });
+    const saved = store.updateSettings({
+      defaultRangeDays: 14,
+      appointmentsPerPage: 50,
+      preferredZoneId: 8,
+      autoLoadAppointments: true,
+    });
+    assert.equal(saved.defaultRangeDays, 14);
+    assert.equal(saved.appointmentsPerPage, 50);
+    assert.equal(saved.preferredZoneId, 8);
+    assert.equal(saved.autoLoadAppointments, true);
+  } finally {
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('aktualisiert Providerstatus und gibt einen endgültig fehlgeschlagenen Termin wieder frei', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sms-reminder-provider-status-'));
+  const store = await createHistoryStore({ dataDirectory: directory, retentionDays: 90, hashKey: 'provider-key' });
+  try {
+    const request = store.beginRequest({ idempotencyKey: 'provider-status-0001', source: 'test', mode: 'live' });
+    store.reserveAppointments({ requestId: request.requestId, appointmentIds: [88], mode: 'live' });
+    store.recordItemResult(request.requestId, {
+      appointmentId: 88,
+      patientNumber: 99,
+      phone: '+491701234567',
+      status: 'unknown',
+      providerStatus: 'UNKNOWN',
+      clientReference: 'reminder-88',
+      channel: 'rcs',
+      source: 'test',
+      mode: 'live',
+    });
+    const [pending] = store.listPendingProviderResults();
+    assert.equal(pending.clientReference, 'reminder-88');
+    assert.equal(store.updateProviderResult({
+      recordId: pending.id,
+      status: 'failed',
+      providerStatus: 'NOTDELIVERED',
+      providerReference: 'seven-88',
+      channel: 'sms',
+    }), true);
+    assert.equal(store.listRecent()[0].status, 'failed');
+    assert.equal(store.listRecent()[0].channel, 'sms');
+    assert.equal(store.appointmentStatuses([88], 'live').has(88), false);
+    assert.equal(store.reserveAppointments({
+      requestId: request.requestId,
+      appointmentIds: [88],
+      mode: 'live',
+    }).reserved, true);
+  } finally {
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('stellt nach fehlgeschlagener Wiederholung die vorherige Versandsperre wieder her', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'sms-reminder-provider-repeat-'));
+  const store = await createHistoryStore({ dataDirectory: directory, retentionDays: 90, hashKey: 'provider-repeat-key' });
+  try {
+    const first = store.beginRequest({ idempotencyKey: 'provider-repeat-0001', source: 'test', mode: 'live' });
+    store.reserveAppointments({ requestId: first.requestId, appointmentIds: [89], mode: 'live' });
+    store.recordItemResult(first.requestId, {
+      appointmentId: 89, patientNumber: 99, phone: '+491701234567', status: 'delivered',
+      providerStatus: 'DELIVERED', clientReference: 'reminder-89-first', channel: 'sms',
+      source: 'test', mode: 'live',
+    });
+
+    const repeat = store.beginRequest({ idempotencyKey: 'provider-repeat-0002', source: 'test', mode: 'live' });
+    assert.equal(store.reserveAppointments({
+      requestId: repeat.requestId,
+      appointmentIds: [89],
+      resendAppointmentIds: [89],
+      mode: 'live',
+    }).reserved, true);
+    store.recordItemResult(repeat.requestId, {
+      appointmentId: 89, patientNumber: 99, phone: '+491701234567', status: 'unknown',
+      providerStatus: 'UNKNOWN', clientReference: 'reminder-89-repeat', channel: 'rcs',
+      source: 'test', mode: 'live', isRepeat: true,
+    });
+    const pending = store.listPendingProviderResults().find((item) => item.clientReference === 'reminder-89-repeat');
+    store.updateProviderResult({ recordId: pending.id, status: 'failed', providerStatus: 'NOTDELIVERED' });
+
+    assert.equal(store.appointmentStatuses([89], 'live').get(89).status, 'delivered');
+    const third = store.beginRequest({ idempotencyKey: 'provider-repeat-0003', source: 'test', mode: 'live' });
+    assert.equal(store.reserveAppointments({
+      requestId: third.requestId,
+      appointmentIds: [89],
+      mode: 'live',
+    }).reserved, false);
+  } finally {
+    store.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

@@ -43,6 +43,8 @@ test('liefert 25 erfundene Patientinnen an genau einem gewählten Tag', async ()
   assert.equal(result.appointments.every((item) => item.zoneId === DEMO_ZONE_ID), true);
   assert.equal(result.appointments.every((item) => item.firstName === 'Testpatientin'), true);
   assert.equal(result.appointments.filter((item) => item.hasMobile && item.hasConsent).length, 20);
+  assert.equal(result.appointments.filter((item) => item.hasRcsConsent).length, 10);
+  assert.equal(result.appointments.filter((item) => item.hasSmsConsent && item.hasMobile).length, 10);
   assert.equal(result.appointments.filter((item) => !item.hasMobile).length, 3);
   assert.equal(result.appointments.filter((item) => item.hasMobile && !item.hasConsent).length, 2);
 });

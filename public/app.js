@@ -2,23 +2,17 @@ const state = {
   appointments: [],
   selected: new Set(),
   resend: new Set(),
-  csrfToken: '',
-  messageTemplate: '',
-  templateId: null,
-  templates: [],
-  smsMode: 'mock',
   page: 1,
   pageSize: 20,
-  editingTemplateId: null,
-  deleteTemplateArmed: false,
+  summaryFilter: 'all',
+  settings: null,
   pendingResendId: null,
-  pendingIdempotencyKey: null,
-  sending: false,
 };
 
+const reminderSelectionKey = 'smsreminder.reminderSelection';
+const reminderSelectionMaxAgeMs = 2 * 60 * 60 * 1000;
+
 const elements = {
-  connection: document.querySelector('#connection'),
-  appVersion: document.querySelector('#app-version'),
   updateWarning: document.querySelector('#update-warning'),
   from: document.querySelector('#from-date'),
   to: document.querySelector('#to-date'),
@@ -30,39 +24,21 @@ const elements = {
   selectAll: document.querySelector('#select-all'),
   selectedCount: document.querySelector('#selected-count'),
   reviewButton: document.querySelector('#review-button'),
-  template: document.querySelector('#template'),
-  templateSelect: document.querySelector('#template-select'),
-  openTemplateManager: document.querySelector('#open-template-manager'),
   pageSize: document.querySelector('#page-size'),
   pageInfo: document.querySelector('#page-info'),
   pageNumber: document.querySelector('#page-number'),
   previousPage: document.querySelector('#previous-page'),
   nextPage: document.querySelector('#next-page'),
   total: document.querySelector('#total-count'),
-  patient: document.querySelector('#patient-count'),
-  mobile: document.querySelector('#mobile-count'),
   missing: document.querySelector('#missing-count'),
   eligible: document.querySelector('#eligible-count'),
-  reviewDialog: document.querySelector('#review-dialog'),
-  reviewCount: document.querySelector('#review-count'),
-  reviewTemplateName: document.querySelector('#review-template-name'),
-  reviewWarning: document.querySelector('#review-warning'),
-  reviewList: document.querySelector('#review-list'),
-  reviewError: document.querySelector('#review-error'),
-  finalSend: document.querySelector('#final-send-button'),
+  missingConsent: document.querySelector('#missing-consent-count'),
+  missingPatient: document.querySelector('#missing-patient-count'),
+  missingPatientSummary: document.querySelector('#missing-patient-summary'),
+  summaryFilters: [...document.querySelectorAll('[data-summary-filter]')],
   resendDialog: document.querySelector('#resend-dialog'),
   resendDetail: document.querySelector('#resend-detail'),
   confirmResend: document.querySelector('#confirm-resend-button'),
-  templateDialog: document.querySelector('#template-dialog'),
-  templateList: document.querySelector('#template-list'),
-  newTemplate: document.querySelector('#new-template-button'),
-  templateName: document.querySelector('#template-name'),
-  templateBody: document.querySelector('#template-body'),
-  templateCharacterCount: document.querySelector('#template-character-count'),
-  templateError: document.querySelector('#template-error'),
-  saveTemplate: document.querySelector('#save-template-button'),
-  defaultTemplate: document.querySelector('#default-template-button'),
-  deleteTemplate: document.querySelector('#delete-template-button'),
 };
 
 class ApiError extends Error {
@@ -79,11 +55,11 @@ function localIso(date) {
   return local.toISOString().slice(0, 10);
 }
 
-function setDefaultRange() {
+function setDefaultRange(days = 7) {
   const from = new Date();
   from.setDate(from.getDate() + 1);
   const to = new Date(from);
-  to.setDate(to.getDate() + 6);
+  to.setDate(to.getDate() + Math.max(0, days - 1));
   elements.from.value = localIso(from);
   elements.to.value = localIso(to);
 }
@@ -108,83 +84,25 @@ async function api(path, options = {}) {
   return body;
 }
 
-async function loadSession() {
-  const session = await api('/api/session');
-  state.csrfToken = session.csrfToken;
-  state.messageTemplate = session.messageTemplate;
-  state.templateId = session.messageTemplateId;
-  state.smsMode = session.smsMode;
-  elements.template.value = session.messageTemplate;
-}
-
-function mutationOptions(method, body = {}) {
-  return {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': state.csrfToken,
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-function activeTemplate() {
-  return state.templates.find((template) => template.id === state.templateId) || null;
-}
-
-function selectTemplate(id) {
-  const template = state.templates.find((item) => item.id === id);
-  if (!template) return;
-  state.templateId = template.id;
-  state.messageTemplate = template.body;
-  elements.template.value = template.body;
-  elements.templateSelect.value = template.id;
-}
-
-function renderTemplatePicker() {
-  elements.templateSelect.innerHTML = state.templates.map((template) =>
-    `<option value="${template.id}">${escapeHtml(template.name)}${template.isDefault ? ' · Standard' : ''}</option>`).join('');
-  const selected = state.templates.some((template) => template.id === state.templateId)
-    ? state.templateId
-    : state.templates.find((template) => template.isDefault)?.id || state.templates[0]?.id;
-  if (selected) selectTemplate(selected);
-}
-
-async function loadTemplates(preferredId = state.templateId) {
-  const result = await api('/api/templates');
-  state.templates = result.templates;
-  state.templateId = state.templates.some((item) => item.id === preferredId)
-    ? preferredId
-    : state.templates.find((item) => item.isDefault)?.id || state.templates[0]?.id || null;
-  renderTemplatePicker();
-  renderTemplateManager();
-}
-
-async function checkConnection() {
-  try {
-    const result = await api('/api/health');
-    const marker = result.markerConfigured ? '' : ' · Freigabemarker fehlt';
-    elements.connection.className = `connection ${result.markerConfigured ? 'online' : 'warning'}`;
-    elements.connection.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>${escapeHtml(result.database)} · MariaDB ${escapeHtml(result.version)} · nur lesen${marker}</span>`;
-  } catch (error) {
-    elements.connection.className = 'connection offline';
-    elements.connection.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>${escapeHtml(error.message)}</span>`;
-  }
+async function loadSettings() {
+  const result = await api('/api/settings');
+  state.settings = result.preferences;
+  state.pageSize = result.preferences.appointmentsPerPage;
+  elements.pageSize.value = String(state.pageSize);
+  setDefaultRange(result.preferences.defaultRangeDays);
+  return result.preferences;
 }
 
 async function loadUpdateStatus() {
   try {
     const result = await api('/api/update-status');
-    elements.appVersion.textContent = `Version ${result.currentVersion}`;
     if (result.state === 'failed' || result.state === 'blocked') {
       elements.updateWarning.textContent = result.message;
       elements.updateWarning.hidden = false;
     } else {
       elements.updateWarning.hidden = true;
     }
-  } catch {
-    elements.appVersion.textContent = 'Version unbekannt';
-  }
+  } catch { elements.updateWarning.hidden = true; }
 }
 
 async function loadZones() {
@@ -196,16 +114,46 @@ async function loadZones() {
       option.textContent = zone.name;
       elements.zone.append(option);
     }
+    return zones;
   } catch {
     // Der Verbindungshinweis zeigt den Fehler bereits an.
+    return [];
   }
 }
 
-function filteredAppointments() {
+function searchFilteredAppointments() {
   const needle = elements.search.value.trim().toLocaleLowerCase('de');
   if (!needle) return state.appointments;
   return state.appointments.filter((item) =>
     `${item.firstName || ''} ${item.lastName || ''}`.toLocaleLowerCase('de').includes(needle));
+}
+
+function matchesSummaryFilter(item) {
+  if (state.summaryFilter === 'ready') return isSelectable(item);
+  if (state.summaryFilter === 'missing-mobile') return item.hasPatient && !item.hasMobile;
+  if (state.summaryFilter === 'missing-consent') return item.hasPatient && item.hasMobile && !item.hasConsent;
+  if (state.summaryFilter === 'missing-patient') return !item.hasPatient;
+  return true;
+}
+
+function filteredAppointments() {
+  return searchFilteredAppointments().filter(matchesSummaryFilter);
+}
+
+function renderSummary() {
+  const appointments = searchFilteredAppointments();
+  const missingPatient = appointments.filter((item) => !item.hasPatient).length;
+  elements.total.textContent = appointments.length;
+  elements.eligible.textContent = appointments.filter(isSelectable).length;
+  elements.missing.textContent = appointments.filter((item) => item.hasPatient && !item.hasMobile).length;
+  elements.missingConsent.textContent = appointments.filter((item) => item.hasPatient && item.hasMobile && !item.hasConsent).length;
+  elements.missingPatient.textContent = missingPatient;
+  elements.missingPatientSummary.hidden = missingPatient === 0 && state.summaryFilter !== 'missing-patient';
+  for (const button of elements.summaryFilters) {
+    const active = button.dataset.summaryFilter === state.summaryFilter;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
 }
 
 function paginatedAppointments() {
@@ -251,7 +199,7 @@ function formatDateTime(value) {
 }
 
 function hasReminder(item) {
-  return ['simulated', 'sent'].includes(item.reminderStatus?.status);
+  return ['simulated', 'sent', 'accepted', 'delivered', 'read', 'unknown'].includes(item.reminderStatus?.status);
 }
 
 function isBaseEligible(item) {
@@ -267,9 +215,21 @@ function statusMarkup(item) {
   if (!item.hasMobile) return '<span class="status-badge blocked">Mobil fehlt</span>';
   if (!item.hasConsent) return '<span class="status-badge blocked">Freigabe fehlt</span>';
   if (hasReminder(item)) {
-    const tested = item.reminderStatus.status === 'simulated';
-    const label = tested ? 'Bereits getestet' : 'Bereits gesendet';
+    const status = item.reminderStatus.status;
+    const labels = {
+      simulated: 'Bereits getestet',
+      sent: 'Bereits gesendet',
+      accepted: 'Vom Anbieter angenommen',
+      delivered: 'Zugestellt',
+      read: 'Gelesen',
+      unknown: 'Status wird geklärt',
+    };
+    const channel = item.reminderStatus.channel ? ` · ${item.reminderStatus.channel.toUpperCase()}` : '';
+    const label = `${labels[status] || 'Bereits verarbeitet'}${channel}`;
     const time = formatDateTime(item.reminderStatus.remindedAt);
+    if (status === 'unknown') {
+      return `<span class="status-badge blocked">${label}</span><span class="status-time">${escapeHtml(time)}</span>`;
+    }
     if (state.resend.has(item.id)) {
       return `<span class="status-badge repeat"><svg class="icon" aria-hidden="true"><use href="#icon-repeat"></use></svg>Wiederholung freigegeben</span>
         <button class="text-button resend-cancel-button" type="button" data-id="${item.id}">Zurücknehmen</button>`;
@@ -282,6 +242,7 @@ function statusMarkup(item) {
 }
 
 function renderTable() {
+  renderSummary();
   const page = paginatedAppointments();
   const appointments = page.appointments;
   renderPagination(page);
@@ -348,6 +309,46 @@ function updateSelection() {
   elements.selectAll.checked = selectable.length > 0 && selectable.every((item) => state.selected.has(item.id));
   elements.selectAll.indeterminate = selectable.some((item) => state.selected.has(item.id))
     && !elements.selectAll.checked;
+  persistReminderSelection();
+}
+
+function persistReminderSelection() {
+  if (!state.selected.size) {
+    sessionStorage.removeItem(reminderSelectionKey);
+    return;
+  }
+  sessionStorage.setItem(reminderSelectionKey, JSON.stringify({
+    version: 1,
+    appointmentIds: [...state.selected],
+    resendAppointmentIds: [...state.resend].filter((id) => state.selected.has(id)),
+    from: elements.from.value,
+    to: elements.to.value,
+    zoneId: elements.zone.value || null,
+    createdAt: Date.now(),
+  }));
+}
+
+function readReminderSelection() {
+  try {
+    const payload = JSON.parse(sessionStorage.getItem(reminderSelectionKey));
+    const appointmentIds = Array.isArray(payload?.appointmentIds)
+      ? payload.appointmentIds.filter((id) => Number.isSafeInteger(id) && id > 0)
+      : [];
+    const fresh = Number.isFinite(payload?.createdAt)
+      && Date.now() - payload.createdAt <= reminderSelectionMaxAgeMs;
+    const validDates = /^\d{4}-\d{2}-\d{2}$/.test(payload?.from || '')
+      && /^\d{4}-\d{2}-\d{2}$/.test(payload?.to || '');
+    if (payload?.version !== 1 || !appointmentIds.length || !fresh || !validDates) return null;
+    return {
+      ...payload,
+      appointmentIds: [...new Set(appointmentIds)],
+      resendAppointmentIds: Array.isArray(payload.resendAppointmentIds)
+        ? payload.resendAppointmentIds.filter((id) => appointmentIds.includes(id))
+        : [],
+    };
+  } catch {
+    return null;
+  }
 }
 
 function showMessage(text, isError = false) {
@@ -356,7 +357,7 @@ function showMessage(text, isError = false) {
   elements.message.textContent = text;
 }
 
-async function loadAppointments({ preserveMessage = false } = {}) {
+async function loadAppointments({ preserveMessage = false, restoreSelection = null } = {}) {
   elements.load.disabled = true;
   elements.load.querySelector('span').textContent = 'Lädt …';
   if (!preserveMessage) showMessage('');
@@ -367,12 +368,12 @@ async function loadAppointments({ preserveMessage = false } = {}) {
     state.appointments = result.appointments;
     state.selected.clear();
     state.resend.clear();
+    if (restoreSelection) {
+      const availableIds = new Set(state.appointments.map((item) => item.id));
+      restoreSelection.appointmentIds.filter((id) => availableIds.has(id)).forEach((id) => state.selected.add(id));
+      restoreSelection.resendAppointmentIds.filter((id) => state.selected.has(id)).forEach((id) => state.resend.add(id));
+    }
     state.page = 1;
-    elements.total.textContent = result.summary.total;
-    elements.patient.textContent = result.summary.withPatient;
-    elements.mobile.textContent = result.summary.withMobile;
-    elements.missing.textContent = result.summary.missingMobile;
-    elements.eligible.textContent = result.summary.eligible;
     if (result.truncated) showMessage('Die Ergebnismenge wurde begrenzt. Bitte den Zeitraum verkleinern.');
     renderTable();
   } catch (error) {
@@ -387,13 +388,6 @@ async function loadAppointments({ preserveMessage = false } = {}) {
   }
 }
 
-function renderTemplate(template, item) {
-  return template
-    .replaceAll('{datum}', formatDate(item.date, true))
-    .replaceAll('{uhrzeit}', item.time?.slice(0, 5) || '')
-    .trim();
-}
-
 function openResendDialog(id) {
   const item = state.appointments.find((appointment) => appointment.id === id);
   if (!item || !hasReminder(item)) return;
@@ -403,199 +397,10 @@ function openResendDialog(id) {
   elements.resendDialog.showModal();
 }
 
-function selectedAppointments() {
-  return state.appointments.filter((item) => state.selected.has(item.id));
-}
-
-function openReviewDialog() {
-  const selected = selectedAppointments();
-  if (!selected.length) return;
-  const repeats = selected.filter((item) => state.resend.has(item.id)).length;
-  const demos = selected.filter((item) => item.isDemo || item.reminderStatus?.isDemo).length;
-  elements.reviewCount.textContent = selected.length;
-  elements.reviewTemplateName.textContent = activeTemplate()?.name || 'Standardvorlage';
-  elements.reviewList.innerHTML = selected.map((item) => {
-    const flags = [
-      item.isDemo || item.reminderStatus?.isDemo
-        ? '<span class="review-flag demo"><svg class="icon" aria-hidden="true"><use href="#icon-flask"></use></svg>Demo</span>'
-        : '',
-      state.resend.has(item.id)
-        ? '<span class="review-flag repeat"><svg class="icon" aria-hidden="true"><use href="#icon-repeat"></use></svg>Wiederholung</span>'
-        : '',
-    ].join('');
-    return `<article class="review-item">
-      <div class="review-item-main">
-        <strong>${escapeHtml(patientLabel(item))}</strong>
-        <span>${escapeHtml(formatDate(item.date, true))} · ${escapeHtml(item.time?.slice(0, 5))} Uhr</span>
-      </div>
-      <div class="review-item-target"><span>${escapeHtml(item.mobileMasked)}</span><div class="review-flags">${flags}</div></div>
-      <p>${escapeHtml(renderTemplate(state.messageTemplate, item))}</p>
-    </article>`;
-  }).join('');
-  const warningParts = [];
-  if (repeats) warningParts.push(`${repeats} Wiederholung${repeats === 1 ? '' : 'en'}`);
-  if (demos) warningParts.push(`${demos} Demo-Termin${demos === 1 ? '' : 'e'}`);
-  elements.reviewWarning.hidden = warningParts.length === 0;
-  elements.reviewWarning.querySelector('p').textContent = warningParts.length
-    ? `${warningParts.join(' und ')} sind enthalten. Bitte vor dem Versand besonders prüfen.`
-    : '';
-  elements.reviewError.hidden = true;
-  elements.reviewError.textContent = '';
-  state.pendingIdempotencyKey = crypto.randomUUID();
-  elements.reviewDialog.showModal();
-}
-
-function setReviewBusy(busy) {
-  state.sending = busy;
-  elements.finalSend.disabled = busy;
-  elements.finalSend.querySelector('span').textContent = busy ? 'Testversand läuft …' : 'Testversand jetzt ausführen';
-  elements.reviewDialog.querySelectorAll('button[type="submit"]').forEach((button) => {
-    button.disabled = busy;
-  });
-}
-
-async function sendReviewedBatch() {
-  const appointmentIds = [...state.selected];
-  if (!appointmentIds.length || state.sending) return;
-  const resendAppointmentIds = appointmentIds.filter((id) => state.resend.has(id));
-  setReviewBusy(true);
-  elements.reviewError.hidden = true;
-  try {
-    const result = await api('/api/reminder-batches', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': state.csrfToken,
-        'Idempotency-Key': state.pendingIdempotencyKey,
-      },
-      body: JSON.stringify({ appointmentIds, resendAppointmentIds, templateId: state.templateId }),
-    });
-    elements.reviewDialog.close('sent');
-    const parts = [`${result.sent} Test-SMS erfolgreich simuliert`];
-    if (result.failed) parts.push(`${result.failed} fehlgeschlagen`);
-    if (result.skipped) parts.push(`${result.skipped} nicht versucht`);
-    showMessage(`${parts.join(', ')}.`, Boolean(result.failed));
-    await loadAppointments({ preserveMessage: true });
-  } catch (error) {
-    const details = error.details.length
-      ? ` ${error.details.map((item) => `Termin ${item.appointmentId}: ${item.reason}`).join(' ')}`
-      : '';
-    elements.reviewError.textContent = `${error.message}${details}`;
-    elements.reviewError.hidden = false;
-  } finally {
-    setReviewBusy(false);
-  }
-}
-
-function showTemplateError(text = '') {
-  elements.templateError.hidden = !text;
-  elements.templateError.textContent = text;
-}
-
-function updateTemplateCharacterCount() {
-  elements.templateCharacterCount.textContent = `${elements.templateBody.value.length} / 320 Zeichen`;
-}
-
-function renderTemplateManager() {
-  elements.templateList.innerHTML = state.templates.map((template) => `
-    <button class="template-list-item${template.id === state.editingTemplateId ? ' active' : ''}" type="button" data-id="${template.id}">
-      <span>${escapeHtml(template.name)}</span>
-      ${template.isDefault ? '<small><svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>Standard</small>' : ''}
-    </button>`).join('');
-  elements.templateList.querySelectorAll('.template-list-item').forEach((button) => {
-    button.addEventListener('click', () => editTemplate(button.dataset.id));
-  });
-  const current = state.templates.find((template) => template.id === state.editingTemplateId);
-  elements.defaultTemplate.disabled = !current || current.isDefault;
-  elements.deleteTemplate.disabled = !current || current.isDefault;
-  elements.newTemplate.disabled = state.templates.length >= 20;
-}
-
-function editTemplate(id) {
-  const template = state.templates.find((item) => item.id === id);
-  state.editingTemplateId = template?.id || null;
-  state.deleteTemplateArmed = false;
-  elements.deleteTemplate.querySelector('span').textContent = 'Löschen';
-  elements.templateName.value = template?.name || '';
-  elements.templateBody.value = template?.body
-    || 'Praxis Recker: Wir erinnern Sie an Ihren Termin am {datum} um {uhrzeit} Uhr.';
-  showTemplateError();
-  updateTemplateCharacterCount();
-  renderTemplateManager();
-}
-
-function openTemplateManager() {
-  editTemplate(state.templateId || state.templates[0]?.id || null);
-  elements.templateDialog.showModal();
-}
-
-async function saveTemplate() {
-  const payload = {
-    name: elements.templateName.value,
-    body: elements.templateBody.value,
-  };
-  elements.saveTemplate.disabled = true;
-  showTemplateError();
-  try {
-    const path = state.editingTemplateId
-      ? `/api/templates/${state.editingTemplateId}`
-      : '/api/templates';
-    const method = state.editingTemplateId ? 'PUT' : 'POST';
-    const result = await api(path, mutationOptions(method, payload));
-    state.editingTemplateId = result.template.id;
-    await loadTemplates(result.template.id);
-    editTemplate(result.template.id);
-  } catch (error) {
-    showTemplateError(error.message);
-  } finally {
-    elements.saveTemplate.disabled = false;
-  }
-}
-
-async function makeTemplateDefault() {
-  if (!state.editingTemplateId) return;
-  elements.defaultTemplate.disabled = true;
-  showTemplateError();
-  try {
-    const result = await api(
-      `/api/templates/${state.editingTemplateId}/default`,
-      mutationOptions('POST'),
-    );
-    await loadTemplates(result.template.id);
-    editTemplate(result.template.id);
-  } catch (error) {
-    showTemplateError(error.message);
-  }
-}
-
-async function deleteTemplate() {
-  if (!state.editingTemplateId) return;
-  if (!state.deleteTemplateArmed) {
-    state.deleteTemplateArmed = true;
-    elements.deleteTemplate.querySelector('span').textContent = 'Löschen bestätigen';
-    return;
-  }
-  elements.deleteTemplate.disabled = true;
-  showTemplateError();
-  try {
-    await api(`/api/templates/${state.editingTemplateId}`, mutationOptions('DELETE'));
-    state.editingTemplateId = null;
-    await loadTemplates();
-    editTemplate(state.templateId);
-  } catch (error) {
-    state.deleteTemplateArmed = false;
-    elements.deleteTemplate.querySelector('span').textContent = 'Löschen';
-    showTemplateError(error.message);
-  }
-}
-
-function insertPlaceholder(value) {
-  const input = elements.templateBody;
-  const start = input.selectionStart ?? input.value.length;
-  const end = input.selectionEnd ?? start;
-  input.setRangeText(value, start, end, 'end');
-  input.focus();
-  updateTemplateCharacterCount();
+function goToReminderPage() {
+  if (!state.selected.size) return;
+  persistReminderSelection();
+  window.location.assign('/reminders.html');
 }
 
 elements.load.addEventListener('click', loadAppointments);
@@ -603,6 +408,13 @@ elements.search.addEventListener('input', () => {
   state.page = 1;
   renderTable();
 });
+for (const button of elements.summaryFilters) {
+  button.addEventListener('click', () => {
+    state.summaryFilter = button.dataset.summaryFilter;
+    state.page = 1;
+    renderTable();
+  });
+}
 elements.zone.addEventListener('change', loadAppointments);
 elements.selectAll.addEventListener('change', () => {
   for (const item of paginatedAppointments().appointments) {
@@ -625,18 +437,7 @@ elements.nextPage.addEventListener('click', () => {
   state.page += 1;
   renderTable();
 });
-elements.templateSelect.addEventListener('change', () => selectTemplate(elements.templateSelect.value));
-elements.openTemplateManager.addEventListener('click', openTemplateManager);
-elements.newTemplate.addEventListener('click', () => editTemplate(null));
-elements.saveTemplate.addEventListener('click', saveTemplate);
-elements.defaultTemplate.addEventListener('click', makeTemplateDefault);
-elements.deleteTemplate.addEventListener('click', deleteTemplate);
-elements.templateBody.addEventListener('input', updateTemplateCharacterCount);
-document.querySelectorAll('.placeholder-button').forEach((button) => {
-  button.addEventListener('click', () => insertPlaceholder(button.dataset.placeholder));
-});
-elements.reviewButton.addEventListener('click', openReviewDialog);
-elements.finalSend.addEventListener('click', sendReviewedBatch);
+elements.reviewButton.addEventListener('click', goToReminderPage);
 elements.confirmResend.addEventListener('click', () => {
   const id = state.pendingResendId;
   if (id !== null) {
@@ -650,10 +451,16 @@ elements.confirmResend.addEventListener('click', () => {
 elements.resendDialog.addEventListener('close', () => {
   state.pendingResendId = null;
 });
-elements.reviewDialog.addEventListener('cancel', (event) => {
-  if (state.sending) event.preventDefault();
-});
-
-setDefaultRange();
-await loadSession();
-await Promise.all([checkConnection(), loadZones(), loadTemplates(), loadUpdateStatus()]);
+const [settings, zones] = await Promise.all([loadSettings(), loadZones(), loadUpdateStatus()]);
+const storedSelection = readReminderSelection();
+if (storedSelection) {
+  elements.from.value = storedSelection.from;
+  elements.to.value = storedSelection.to;
+  if (storedSelection.zoneId && zones.some((zone) => String(zone.id) === String(storedSelection.zoneId))) {
+    elements.zone.value = String(storedSelection.zoneId);
+  }
+  await loadAppointments({ restoreSelection: storedSelection });
+} else if (settings.preferredZoneId !== null && zones.some((zone) => Number(zone.id) === settings.preferredZoneId)) {
+  elements.zone.value = String(settings.preferredZoneId);
+}
+if (!storedSelection && settings.autoLoadAppointments) await loadAppointments();

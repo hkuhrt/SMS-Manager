@@ -6,7 +6,7 @@ import { createHttpApplication } from './http-app.js';
 import { loadOrCreateIntegrationKey } from './integration-key.js';
 import { ReminderService } from './reminder-service.js';
 import { SelectionStore } from './selection-store.js';
-import { createSmsProvider } from './sms-provider.js';
+import { createMessagingConnectionTester, createSmsProvider } from './sms-provider.js';
 import { createUpdateStatusReader } from './update-status.js';
 
 export async function startServer(overrides = {}) {
@@ -26,9 +26,9 @@ export async function startServer(overrides = {}) {
   const reminderService = overrides.reminderService || new ReminderService({
     dataSource,
     historyStore,
-    provider: createSmsProvider(config.sms.mode),
+    provider: createSmsProvider(config.sms),
     template: config.sms.template,
-    mode: config.sms.mode,
+    mode: config.sms.mode === 'mock' ? 'mock' : 'live',
   });
   const updateStatusReader = overrides.updateStatusReader || createUpdateStatusReader({
     dataDirectory: config.storage.dataDirectory,
@@ -41,6 +41,8 @@ export async function startServer(overrides = {}) {
     selectionStore,
     integrationKey,
     updateStatusReader,
+    messagingConnectionTester: overrides.messagingConnectionTester
+      || createMessagingConnectionTester(config.sms),
     csrfToken: randomBytes(24).toString('base64url'),
   });
   const purgeTimer = setInterval(() => {
@@ -51,15 +53,29 @@ export async function startServer(overrides = {}) {
     }
   }, 6 * 60 * 60 * 1_000);
   purgeTimer.unref();
+  const statusSyncTimer = config.sms.mode === 'seven'
+    ? setInterval(async () => {
+      try {
+        const result = await reminderService.syncDeliveryStatuses();
+        if (result.updated) {
+          console.log(`[${new Date().toISOString()}] ${result.updated} Versandstatus aktualisiert.`);
+        }
+      } catch (error) {
+        console.error(`[${new Date().toISOString()}] DeliveryStatusSyncError`, error.message);
+      }
+    }, config.sms.statusSyncMinutes * 60_000)
+    : null;
+  statusSyncTimer?.unref();
 
   await new Promise((resolveListen, reject) => {
     server.once('error', reject);
     server.listen(config.app.port, config.app.host, resolveListen);
   });
-  console.log(`SMS Reminder läuft lokal auf http://${config.app.host}:${config.app.port} · TESTMODUS`);
+  console.log(`SMS Reminder läuft lokal auf http://${config.app.host}:${config.app.port} · ${config.sms.mode === 'mock' ? 'TESTMODUS' : 'SEVEN RCS/SMS'}`);
 
   async function shutdown() {
     clearInterval(purgeTimer);
+    if (statusSyncTimer) clearInterval(statusSyncTimer);
     await new Promise((resolveClose) => server.close(resolveClose));
     historyStore.close();
     await dataSource.close();

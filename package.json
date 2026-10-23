@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Lokale, lesende Terminansicht für SMS-Erinnerungen aus MEDICAL OFFICE.",
+  "description": "Lokale, lesende Terminansicht für RCS-/SMS-Erinnerungen aus MEDICAL OFFICE.",
   "scripts": {
     "start": "node --env-file-if-exists=.env src/server.js",
     "dev": "node --watch --env-file-if-exists=.env src/server.js",

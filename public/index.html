@@ -4,15 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
     <title>Terminerinnerungen · Frauenarztpraxis Sabrina Recker</title>
     <link rel="icon" type="image/png" href="/assets/praxis-sabrina-recker-logo.png" />
-    <link rel="stylesheet" href="/styles.css?v=20261023-8" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-11" />
   </head>
-  <body>
+  <body class="app-layout">
     <svg class="icon-sprite" aria-hidden="true">
       <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z" /></symbol>
-      <symbol id="icon-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.4 8.8A2.1 2.1 0 0 0 6.4 21h11.2a2.1 2.1 0 0 0 1.8-3.2L14 9V3M7.8 15h8.4" /></symbol>
-      <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></symbol>
       <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4" /></symbol>
       <symbol id="icon-layers" viewBox="0 0 24 24"><path d="m12 3-9 5 9 5 9-5-9-5ZM3 12l9 5 9-5M3 16l9 5 9-5" /></symbol>
       <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></symbol>
@@ -25,278 +24,71 @@
       <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" /></symbol>
       <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></symbol>
       <symbol id="icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></symbol>
-      <symbol id="icon-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></symbol>
       <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3" /></symbol>
       <symbol id="icon-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></symbol>
       <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v4M12 17h.01" /></symbol>
       <symbol id="icon-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" /></symbol>
       <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" /></symbol>
       <symbol id="icon-template" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M7 8h10M7 12h10M7 16h6" /></symbol>
-      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
-      <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></symbol>
-      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 3h6l1 4H8l1-4ZM7 7l1 14h8l1-14M10 11v6M14 11v6" /></symbol>
-      <symbol id="icon-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5V3Z" /><path d="M8 3v6h8V3M8 21v-7h8v7" /></symbol>
       <symbol id="icon-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></symbol>
       <symbol id="icon-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></symbol>
     </svg>
 
-    <header class="app-header dashboard-header">
-      <h1 class="sr-only">Terminerinnerungen</h1>
-      <div class="header-workspace">
-        <div class="brand-mark">
-          <img
-            class="practice-logo"
-            src="/assets/praxis-sabrina-recker-logo.png"
-            alt="Frauenarztpraxis Sabrina Recker"
-            width="600"
-            height="234"
-          />
+    <div id="app-navigation" data-active="appointments"></div>
+    <div class="app-content">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg> MEDICAL OFFICE</p>
+          <h1>Terminerinnerungen</h1>
+          <p class="subtitle">Termine prüfen, Patientinnen auswählen und Erinnerungen sicher vorbereiten.</p>
         </div>
+      </header>
 
+      <main class="page-main">
+        <div class="update-warning" id="update-warning" role="status" hidden></div>
         <section class="filter-panel" aria-labelledby="filter-title">
-          <div class="filter-heading">
-            <span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-filter" /></svg></span>
-            <div>
-              <p class="section-kicker">Filter</p>
-              <h2 id="filter-title">Termine eingrenzen</h2>
-            </div>
-          </div>
-
+          <div class="filter-heading"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-filter" /></svg></span><div><p class="section-kicker">Filter</p><h2 id="filter-title">Termine eingrenzen</h2></div></div>
           <div class="filters">
-            <label>
-              <span><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg> Von</span>
-              <input id="from-date" type="date" required />
-            </label>
-            <label>
-              <span><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg> Bis</span>
-              <input id="to-date" type="date" required />
-            </label>
-            <label>
-              <span><svg class="icon" aria-hidden="true"><use href="#icon-layers" /></svg> Kalender / Zone</span>
-              <select id="zone-filter">
-                <option value="">Alle Zonen</option>
-              </select>
-            </label>
-            <label class="search-field">
-              <span><svg class="icon" aria-hidden="true"><use href="#icon-search" /></svg> Patient suchen</span>
-              <input id="search" type="search" placeholder="Name eingeben" autocomplete="off" />
-            </label>
-            <button class="button button-primary filter-submit" id="load-button" type="button">
-              <svg class="icon" aria-hidden="true"><use href="#icon-refresh" /></svg><span>Termine laden</span>
-            </button>
+            <label><span><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg> Von</span><input id="from-date" type="date" required /></label>
+            <label><span><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg> Bis</span><input id="to-date" type="date" required /></label>
+            <label><span><svg class="icon" aria-hidden="true"><use href="#icon-layers" /></svg> Kalender / Zone</span><select id="zone-filter"><option value="">Alle Zonen</option></select></label>
+            <label class="search-field"><span><svg class="icon" aria-hidden="true"><use href="#icon-search" /></svg> Patient suchen</span><input id="search" type="search" placeholder="Name eingeben" autocomplete="off" /></label>
+            <button class="button button-primary filter-submit" id="load-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-refresh" /></svg><span>Termine laden</span></button>
           </div>
           <p class="privacy-note"><svg class="icon" aria-hidden="true"><use href="#icon-lock" /></svg> Keine Behandlungsgründe, Bemerkungen oder medizinischen Freitexte.</p>
         </section>
-      </div>
-    </header>
 
-    <main>
-      <div class="update-warning" id="update-warning" role="status" hidden></div>
-
-      <section class="summary-grid" aria-label="Zusammenfassung">
-        <article>
-          <span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg></span>
-          <span class="metric-copy"><span>Termine</span><strong id="total-count">–</strong></span>
-        </article>
-        <article>
-          <span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#icon-user" /></svg></span>
-          <span class="metric-copy"><span>Patient zugeordnet</span><strong id="patient-count">–</strong></span>
-        </article>
-        <article>
-          <span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#icon-mobile" /></svg></span>
-          <span class="metric-copy"><span>Mobil vorhanden</span><strong id="mobile-count">–</strong></span>
-        </article>
-        <article class="warning-stat">
-          <span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#icon-mobile-off" /></svg></span>
-          <span class="metric-copy"><span>Mobil fehlt</span><strong id="missing-count">–</strong></span>
-        </article>
-        <article>
-          <span class="metric-icon"><svg class="icon" aria-hidden="true"><use href="#icon-shield" /></svg></span>
-          <span class="metric-copy"><span>SMS freigegeben</span><strong id="eligible-count">–</strong></span>
-        </article>
-      </section>
-
-      <section class="workspace">
-        <div class="appointments-panel">
-          <div class="section-heading compact">
-            <div class="heading-with-icon">
-              <span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg></span>
-              <div>
-              <p class="section-kicker">Termine</p>
-              <h2>Termine auswählen</h2>
-              </div>
+        <section class="appointments-workspace">
+          <div class="appointments-panel">
+            <div class="section-heading compact"><div class="heading-with-icon"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg></span><div><p class="section-kicker">Termine</p><h2>Termine auswählen</h2></div></div><label class="select-all"><input id="select-all" type="checkbox" /><span>Diese Seite</span></label></div>
+            <div class="appointment-summary" role="group" aria-label="Terminübersicht und Schnellfilter">
+              <button class="summary-chip active" type="button" data-summary-filter="all" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#icon-list" /></svg><strong id="total-count">–</strong><span>Termine</span></button>
+              <button class="summary-chip ready" type="button" data-summary-filter="ready" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#icon-shield" /></svg><strong id="eligible-count">–</strong><span>versandbereit</span></button>
+              <button class="summary-chip warning" type="button" data-summary-filter="missing-mobile" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#icon-mobile-off" /></svg><strong id="missing-count">–</strong><span>ohne Mobilnummer</span></button>
+              <button class="summary-chip warning" type="button" data-summary-filter="missing-consent" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#icon-alert" /></svg><strong id="missing-consent-count">–</strong><span>ohne Freigabe</span></button>
+              <button class="summary-chip warning" id="missing-patient-summary" type="button" data-summary-filter="missing-patient" aria-pressed="false" hidden><svg class="icon" aria-hidden="true"><use href="#icon-user" /></svg><strong id="missing-patient-count">–</strong><span>ohne Patientenzuordnung</span></button>
             </div>
-            <label class="select-all">
-              <input id="select-all" type="checkbox" />
-              <span>Diese Seite</span>
-            </label>
-          </div>
-
-          <div id="message" class="message" hidden></div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th class="check-column"><span class="sr-only">Auswahl</span></th>
-                  <th>Zeit</th>
-                  <th>Patient</th>
-                  <th>Kalender</th>
-                  <th>Mobil</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="appointments">
-                <tr class="empty-row">
-                  <td colspan="6">Bitte zuerst einen Zeitraum laden.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <nav class="pagination" aria-label="Seitennavigation der Termine">
-            <label for="page-size">Pro Seite
-              <select id="page-size">
-                <option value="10">10</option>
-                <option value="20" selected>20</option>
-                <option value="50">50</option>
-              </select>
-            </label>
-            <span id="page-info">0 Termine</span>
-            <div class="pagination-buttons">
-              <button class="icon-button" id="previous-page" type="button" aria-label="Vorherige Seite" disabled><svg class="icon" aria-hidden="true"><use href="#icon-chevron-left" /></svg></button>
-              <strong id="page-number">Seite 1 von 1</strong>
-              <button class="icon-button" id="next-page" type="button" aria-label="Nächste Seite" disabled><svg class="icon" aria-hidden="true"><use href="#icon-chevron-right" /></svg></button>
+            <div id="message" class="message" hidden></div>
+            <div class="table-wrap"><table><thead><tr><th class="check-column"><span class="sr-only">Auswahl</span></th><th>Zeit</th><th>Patient</th><th>Kalender</th><th>Mobil</th><th>Status</th></tr></thead><tbody id="appointments"><tr class="empty-row"><td colspan="6">Bitte zuerst einen Zeitraum laden.</td></tr></tbody></table></div>
+            <div class="table-footer">
+              <nav class="pagination" aria-label="Seitennavigation der Termine"><label for="page-size">Pro Seite <select id="page-size"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select></label><span id="page-info">0 Termine</span><div class="pagination-buttons"><button class="icon-button" id="previous-page" type="button" aria-label="Vorherige Seite" disabled><svg class="icon" aria-hidden="true"><use href="#icon-chevron-left" /></svg></button><strong id="page-number">Seite 1 von 1</strong><button class="icon-button" id="next-page" type="button" aria-label="Nächste Seite" disabled><svg class="icon" aria-hidden="true"><use href="#icon-chevron-right" /></svg></button></div></nav>
+              <div class="selection-inline" aria-live="polite"><span class="selection-inline-count"><strong id="selected-count">0</strong> ausgewählt</span><button class="button button-primary button-small" id="review-button" type="button" disabled><span>Erinnerung prüfen</span><svg class="icon" aria-hidden="true"><use href="#icon-chevron-right" /></svg></button></div>
             </div>
-          </nav>
-        </div>
-
-        <aside class="reminder-panel" aria-labelledby="reminder-title">
-          <div class="heading-with-icon reminder-heading">
-            <span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg></span>
-            <div><p class="section-kicker">SMS</p><h2 id="reminder-title">Erinnerung vorbereiten</h2></div>
           </div>
-          <div class="selection-count"><strong id="selected-count">0</strong> Termine ausgewählt</div>
-
-          <label class="template-label" for="template-select">SMS-Vorlage</label>
-          <div class="template-picker">
-            <select id="template-select" aria-label="SMS-Vorlage auswählen"></select>
-            <button class="button button-secondary button-small" id="open-template-manager" type="button" aria-label="SMS-Vorlagen verwalten"><svg class="icon" aria-hidden="true"><use href="#icon-template" /></svg><span>Verwalten</span></button>
-          </div>
-          <textarea id="template" rows="6" readonly>Praxis Recker: Wir erinnern Sie an Ihren Termin am {datum} um {uhrzeit} Uhr. Bei Rückfragen melden Sie sich bitte telefonisch.</textarea>
-          <p class="template-help">Die ausgewählte Vorlage wird serverseitig gespeichert und vor dem Versand erneut geprüft.</p>
-
-          <button class="button button-primary review-button" id="review-button" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-eye" /></svg><span>Auswahl prüfen</span></button>
-          <p class="provider-note">Im Testmodus wird nur ein Versand simuliert. Die Telefonnummer verlässt diesen Rechner nicht.</p>
-        </aside>
-      </section>
-
-    </main>
-
-    <dialog class="app-dialog review-dialog" id="review-dialog" aria-labelledby="review-title" aria-describedby="review-description">
-      <form method="dialog" class="dialog-shell">
-        <header class="dialog-header">
-          <span class="dialog-icon"><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg></span>
-          <div>
-            <p class="section-kicker">Letzte Prüfung</p>
-            <h2 id="review-title">SMS-Erinnerungen prüfen</h2>
-            <p id="review-description">Kontrollieren Sie Patientin, Terminzeit und Zielnummer vor dem Testversand.</p>
-          </div>
-          <button class="icon-button" type="submit" value="cancel" aria-label="Prüfdialog schließen">
-            <svg class="icon" aria-hidden="true"><use href="#icon-close" /></svg>
-          </button>
-        </header>
-        <div class="dialog-summary">
-          <div><span>Ausgewählt</span><strong id="review-count">0</strong></div>
-          <div><span>Vorlage</span><strong id="review-template-name">–</strong></div>
-          <div><span>Versandmodus</span><strong>Test · keine echte SMS</strong></div>
-        </div>
-        <div class="dialog-warning" id="review-warning" hidden>
-          <svg class="icon" aria-hidden="true"><use href="#icon-alert" /></svg>
-          <p></p>
-        </div>
-        <div class="review-list" id="review-list" tabindex="0" aria-label="Ausgewählte Termine"></div>
-        <p class="dialog-error" id="review-error" role="alert" hidden></p>
-        <footer class="dialog-actions">
-          <button class="button button-secondary" type="submit" value="cancel">Zurück zur Auswahl</button>
-          <button class="button button-primary" id="final-send-button" type="button">
-            <svg class="icon" aria-hidden="true"><use href="#icon-send" /></svg><span>Testversand jetzt ausführen</span>
-          </button>
-        </footer>
-      </form>
-    </dialog>
+        </section>
+      </main>
+    </div>
 
     <dialog class="app-dialog confirm-dialog" id="resend-dialog" aria-labelledby="resend-title" aria-describedby="resend-description">
       <form method="dialog" class="dialog-shell">
-        <header class="dialog-header">
-          <span class="dialog-icon warning"><svg class="icon" aria-hidden="true"><use href="#icon-repeat" /></svg></span>
-          <div>
-            <p class="section-kicker">Wiederholung</p>
-            <h2 id="resend-title">Termin erneut auswählen?</h2>
-          </div>
-        </header>
+        <header class="dialog-header"><span class="dialog-icon warning"><svg class="icon" aria-hidden="true"><use href="#icon-repeat" /></svg></span><div><p class="section-kicker">Wiederholung</p><h2 id="resend-title">Termin erneut auswählen?</h2></div></header>
         <p id="resend-description">Für diesen Termin wurde bereits eine Erinnerung verarbeitet. Eine Wiederholung muss bewusst bestätigt werden und wird im Protokoll markiert.</p>
         <div class="resend-detail" id="resend-detail"></div>
-        <footer class="dialog-actions">
-          <button class="button button-secondary" type="submit" value="cancel">Abbrechen</button>
-          <button class="button button-warning" id="confirm-resend-button" type="button">
-            <svg class="icon" aria-hidden="true"><use href="#icon-repeat" /></svg><span>Erneut auswählen</span>
-          </button>
-        </footer>
+        <footer class="dialog-actions"><button class="button button-secondary" type="submit" value="cancel">Abbrechen</button><button class="button button-warning" id="confirm-resend-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-repeat" /></svg><span>Erneut auswählen</span></button></footer>
       </form>
     </dialog>
 
-    <dialog class="app-dialog template-dialog" id="template-dialog" aria-labelledby="template-dialog-title">
-      <form method="dialog" class="dialog-shell">
-        <header class="dialog-header">
-          <span class="dialog-icon"><svg class="icon" aria-hidden="true"><use href="#icon-template" /></svg></span>
-          <div>
-            <p class="section-kicker">Lokale Vorlagen</p>
-            <h2 id="template-dialog-title">SMS-Vorlagen verwalten</h2>
-            <p>Vorlagen gelten auch für den MEDICAL-OFFICE-Button, wenn sie als Standard festgelegt sind.</p>
-          </div>
-          <button class="icon-button" type="submit" value="cancel" aria-label="Vorlagenmanager schließen">
-            <svg class="icon" aria-hidden="true"><use href="#icon-close" /></svg>
-          </button>
-        </header>
-        <div class="template-manager">
-          <aside class="template-library" aria-label="Gespeicherte Vorlagen">
-            <button class="button button-secondary button-small" id="new-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-plus" /></svg><span>Neue Vorlage</span></button>
-            <div id="template-list" class="template-list"></div>
-          </aside>
-          <section class="template-editor" aria-label="Vorlage bearbeiten">
-            <label for="template-name"><span>Name</span><input id="template-name" maxlength="60" autocomplete="off" /></label>
-            <label for="template-body"><span>SMS-Text</span><textarea id="template-body" rows="8" maxlength="320"></textarea></label>
-            <div class="template-editor-meta">
-              <span>Platzhalter: <button class="placeholder-button" type="button" data-placeholder="{datum}">{datum}</button> <button class="placeholder-button" type="button" data-placeholder="{uhrzeit}">{uhrzeit}</button></span>
-              <span id="template-character-count">0 / 320 Zeichen</span>
-            </div>
-            <p class="template-manager-note">Beide Platzhalter sind erforderlich. Namen, Diagnosen oder medizinische Angaben sollten nicht in Vorlagen stehen.</p>
-            <p class="dialog-error" id="template-error" role="alert" hidden></p>
-            <div class="template-editor-actions">
-              <button class="button button-secondary button-small" id="default-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-star" /></svg><span>Als Standard</span></button>
-              <button class="button button-secondary button-small danger-button" id="delete-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-trash" /></svg><span>Löschen</span></button>
-              <button class="button button-primary button-small" id="save-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-save" /></svg><span>Speichern</span></button>
-            </div>
-          </section>
-        </div>
-      </form>
-    </dialog>
-
-    <footer class="site-footer">
-      <div class="footer-primary">
-        <span>Frauenarztpraxis Sabrina Recker · interne Anwendung</span>
-        <span id="app-version">Version wird geprüft …</span>
-        <a class="footer-link" href="/history.html"><svg class="icon" aria-hidden="true"><use href="#icon-history" /></svg> Protokoll öffnen</a>
-      </div>
-      <div class="footer-status">
-        <span class="mode-badge"><svg class="icon" aria-hidden="true"><use href="#icon-flask" /></svg> Testmodus · kein SMS-Versand</span>
-        <span aria-hidden="true">·</span>
-        <div class="connection" id="connection" aria-live="polite">
-          <svg class="icon" aria-hidden="true"><use href="#icon-database" /></svg>
-          <span>Verbindung wird geprüft …</span>
-        </div>
-      </div>
-    </footer>
-    <script type="module" src="/app.js?v=20261023-8"></script>
+    <script type="module" src="/app-shell.js?v=20261023-5"></script>
+    <script type="module" src="/app.js?v=20261023-12"></script>
   </body>
 </html>
-

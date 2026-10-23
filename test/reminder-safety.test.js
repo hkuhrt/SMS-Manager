@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { createHistoryStore } from '../src/history-store.js';
 import { ReminderConflictError, ReminderService } from '../src/reminder-service.js';
+import { ProviderDeliveryUnknownError } from '../src/sms-provider.js';
 
 function context(id, { isDemo = false } = {}) {
   return {
@@ -183,5 +184,72 @@ test('protokolliert Teilerfolge und gibt fehlgeschlagene sowie übersprungene Te
     });
     assert.equal(retry.sent, 2);
     assert.equal(store.listRecent().find((item) => item.appointmentId === 33).isDemo, true);
+  });
+});
+
+test('wählt RCS nur mit eigener Einwilligung und sperrt bei unbekanntem Versandstatus', async () => {
+  await withStore(async (store) => {
+    const rcsContext = {
+      ...context(41),
+      hasConsent: true,
+      hasSmsConsent: false,
+      hasRcsConsent: true,
+    };
+    let preferredChannel;
+    const service = serviceFor({
+      store,
+      mode: 'live',
+      contexts: [rcsContext],
+      send: async (request) => {
+        preferredChannel = request.preferredChannel;
+        throw new ProviderDeliveryUnknownError();
+      },
+    });
+    const result = await service.send({
+      appointmentIds: [41],
+      idempotencyKey: 'unknown-first-0001',
+      source: 'test',
+    });
+    assert.equal(preferredChannel, 'rcs');
+    assert.equal(result.sent, 0);
+    assert.equal(result.unknown, 1);
+    assert.equal(store.listRecent()[0].status, 'unknown');
+    assert.equal(store.listRecent()[0].channel, 'rcs');
+
+    await assert.rejects(service.send({
+      appointmentIds: [41],
+      idempotencyKey: 'unknown-retry-0002',
+      source: 'test',
+    }), ReminderConflictError);
+    await assert.rejects(service.send({
+      appointmentIds: [41],
+      resendAppointmentIds: [41],
+      idempotencyKey: 'unknown-forced-0003',
+      source: 'test',
+    }), (error) => error instanceof ReminderConflictError
+      && error.details[0].reason.includes('unbekannt'));
+  });
+});
+
+test('verwendet eine bestehende allgemeine Einwilligung weiterhin nur für SMS', async () => {
+  await withStore(async (store) => {
+    let preferredChannel;
+    const service = serviceFor({
+      store,
+      mode: 'live',
+      contexts: [context(42)],
+      send: async (request) => {
+        preferredChannel = request.preferredChannel;
+        return { status: 'accepted', providerReference: 'seven-42', channel: 'sms' };
+      },
+    });
+    const result = await service.send({
+      appointmentIds: [42],
+      idempotencyKey: 'legacy-sms-0001',
+      source: 'test',
+    });
+    assert.equal(preferredChannel, 'sms');
+    assert.equal(result.sent, 1);
+    assert.equal(store.listRecent()[0].channel, 'sms');
   });
 });

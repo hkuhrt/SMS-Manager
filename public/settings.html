@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Einstellungen · Frauenarztpraxis Sabrina Recker</title>
+    <link rel="icon" type="image/png" href="/assets/praxis-sabrina-recker-logo.png" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-10" />
+  </head>
+  <body class="app-layout">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z" /></symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z" /></symbol>
+      <symbol id="icon-template" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M7 8h10M7 12h10M7 16h6" /></symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="m9 12 2 2 4-4" /></symbol>
+      <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="icon-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></symbol>
+      <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 3h6l1 4H8l1-4ZM7 7l1 14h8l1-14M10 11v6M14 11v6" /></symbol>
+      <symbol id="icon-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5V3Z" /><path d="M8 3v6h8V3M8 21v-7h8v7" /></symbol>
+      <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></symbol>
+      <symbol id="icon-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" /></symbol>
+      <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z" /></symbol>
+      <symbol id="icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="M22 2 11 13" /></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3" /></symbol>
+    </svg>
+    <div id="app-navigation" data-active="settings"></div>
+    <div class="app-content">
+      <header class="page-header">
+        <div><p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#icon-settings" /></svg> Lokal auf diesem PC</p><h1>Einstellungen</h1><p class="subtitle">Arbeitsablauf, Nachrichtenvorlagen und technischen Status an einem Ort verwalten.</p></div>
+      </header>
+      <main class="page-main settings-main">
+        <section class="settings-panel" id="general" aria-labelledby="general-title">
+          <div class="settings-section-heading"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-calendar" /></svg></span><div><p class="section-kicker">Terminansicht</p><h2 id="general-title">Voreinstellungen für den Alltag</h2><p>Diese Werte gelten für alle Aufrufe der lokalen Anwendung auf diesem PC.</p></div></div>
+          <form id="settings-form" class="settings-form">
+            <label><span>Standardzeitraum</span><div class="input-with-suffix"><input id="default-range-days" type="number" min="1" max="31" required /><span>Tage</span></div><small>Beginnt immer am folgenden Tag.</small></label>
+            <label><span>Termine pro Seite</span><select id="appointments-per-page"><option value="10">10 Termine</option><option value="20">20 Termine</option><option value="50">50 Termine</option></select><small>Beeinflusst nur die Darstellung, nicht die Auswahl.</small></label>
+            <label><span>Bevorzugte Terminzone</span><select id="preferred-zone"><option value="">Alle Zonen</option></select><small>Wird beim Öffnen vorausgewählt.</small></label>
+            <label class="toggle-setting" for="auto-load"><span><strong>Termine automatisch laden</strong><small>Öffnet die Terminseite direkt mit der voreingestellten Auswahl.</small></span><input id="auto-load" type="checkbox" role="switch" /></label>
+            <div class="settings-save-row"><p id="settings-message" class="form-message" role="status" hidden></p><button class="button button-primary" id="save-settings" type="submit"><svg class="icon" aria-hidden="true"><use href="#icon-save" /></svg><span>Einstellungen speichern</span></button></div>
+          </form>
+        </section>
+
+        <section class="settings-panel" id="templates" aria-labelledby="templates-title">
+          <div class="settings-section-heading"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-template" /></svg></span><div><p class="section-kicker">RCS / SMS</p><h2 id="templates-title">Vorlagen verwalten</h2><p>Die Standardvorlage gilt für RCS und den SMS-Fallback sowie für Erinnerungen aus dem MEDICAL-OFFICE-Button.</p></div></div>
+          <div class="template-manager settings-template-manager">
+            <aside class="template-library" aria-label="Gespeicherte Vorlagen">
+              <button class="button button-secondary button-small" id="new-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-plus" /></svg><span>Neue Vorlage</span></button>
+              <div id="template-list" class="template-list"></div>
+            </aside>
+            <section class="template-editor" aria-label="Vorlage bearbeiten">
+              <label for="template-name"><span>Name</span><input id="template-name" maxlength="60" autocomplete="off" /></label>
+              <label for="template-body"><span>Nachrichtentext</span><textarea id="template-body" rows="7" maxlength="160"></textarea></label>
+              <div class="template-editor-meta"><span>Platzhalter: <button class="placeholder-button" type="button" data-placeholder="{datum}">{datum}</button> <button class="placeholder-button" type="button" data-placeholder="{uhrzeit}">{uhrzeit}</button></span><span id="template-character-count">0 / 160 Zeichen</span></div>
+              <p class="template-manager-note">Beide Platzhalter sind erforderlich. Der gerenderte SMS-Fallback muss in ein Segment passen. Namen, Diagnosen oder medizinische Angaben gehören nicht in Vorlagen.</p>
+              <p class="dialog-error" id="template-error" role="alert" hidden></p>
+              <div class="template-editor-actions"><button class="button button-secondary button-small" id="default-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-star" /></svg><span>Als Standard</span></button><button class="button button-secondary button-small danger-button" id="delete-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-trash" /></svg><span>Löschen</span></button><button class="button button-primary button-small" id="save-template-button" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-save" /></svg><span>Speichern</span></button></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="settings-panel" id="messaging" aria-labelledby="messaging-title">
+          <div class="settings-section-heading"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg></span><div><p class="section-kicker">seven</p><h2 id="messaging-title">Nachrichtenversand (RCS/SMS)</h2><p>Versandbereitschaft, RCS-Agent, SMS-Fallback und Journalabgleich auf einen Blick. Zugangsdaten können hier nicht ausgelesen oder verändert werden.</p></div></div>
+          <div class="messaging-readiness status-warning" id="messaging-readiness" role="status">
+            <strong>Versandstatus wird geprüft …</strong><span>Die lokale Konfiguration wird geladen.</span>
+          </div>
+          <div class="system-grid messaging-grid">
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-lock" /></svg></span><div><span>Betriebsmodus</span><strong id="messaging-mode">Wird geladen …</strong><small id="messaging-mode-detail">–</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-shield" /></svg></span><div><span>API-Schlüssel</span><strong id="messaging-api-key">Wird geprüft …</strong><small>Der Schlüssel selbst wird niemals an den Browser übertragen.</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-message" /></svg></span><div><span>RCS-Agent</span><strong id="messaging-agent">Nicht konfiguriert</strong><small id="messaging-agent-detail">Noch nicht online geprüft</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-send" /></svg></span><div><span>SMS-Absender</span><strong id="messaging-sender">Nicht konfiguriert</strong><small>Maximal 11 alphanumerische oder 16 numerische Zeichen</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-check" /></svg></span><div><span>Fallback</span><strong id="messaging-fallback">SMS</strong><small id="messaging-fallback-detail">Expliziter SMS-Fallback für RCS</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-refresh" /></svg></span><div><span>Journalabgleich</span><strong id="messaging-sync">Noch nicht ausgeführt</strong><small id="messaging-sync-detail">–</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-check" /></svg></span><div><span>SMS-Einwilligung</span><strong id="messaging-sms-marker">Wird geprüft …</strong><small id="messaging-sms-marker-name">–</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-check" /></svg></span><div><span>RCS-Einwilligung</span><strong id="messaging-rcs-marker">Wird geprüft …</strong><small id="messaging-rcs-marker-name">–</small></div></article>
+          </div>
+          <div class="messaging-actions">
+            <p class="form-message" id="messaging-test-result" role="status" hidden></p>
+            <button class="button button-secondary" id="test-messaging-connection" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-refresh" /></svg><span>seven-Verbindung testen</span></button>
+          </div>
+          <p class="security-note"><svg class="icon" aria-hidden="true"><use href="#icon-lock" /></svg> Änderungen an API-Schlüssel, Agent, Absender oder Echtmodus erfolgen ausschließlich in der geschützten lokalen <code>.env</code> und werden erst nach einem Dienstneustart aktiv.</p>
+        </section>
+
+        <section class="settings-panel" id="system" aria-labelledby="system-title">
+          <div class="settings-section-heading"><span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-shield" /></svg></span><div><p class="section-kicker">Nur lesen</p><h2 id="system-title">System &amp; Datenschutz</h2><p>Technische Informationen werden angezeigt, können hier aber nicht verändert werden.</p></div></div>
+          <div class="system-grid">
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-database" /></svg></span><div><span>Datenbank</span><strong id="system-database">Wird geprüft …</strong><small id="system-database-detail">Nur lesender Zugriff</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-check" /></svg></span><div><span>Freigabemarker</span><strong id="system-marker">Wird geprüft …</strong><small id="system-marker-name">–</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-lock" /></svg></span><div><span>Betrieb</span><strong id="system-mode">Testmodus</strong><small id="system-local">Nur auf diesem PC erreichbar</small></div></article>
+            <article><span class="system-icon"><svg class="icon" aria-hidden="true"><use href="#icon-history" /></svg></span><div><span>Datenspeicherung</span><strong id="system-retention">90 Tage</strong><small id="system-version">Version wird geprüft …</small></div></article>
+          </div>
+          <p class="security-note"><svg class="icon" aria-hidden="true"><use href="#icon-lock" /></svg> Datenbankkennwort, Integrationsschlüssel und MEDICAL-OFFICE-Pfade werden in dieser Oberfläche weder geladen noch angezeigt.</p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/app-shell.js?v=20261023-5"></script>
+    <script type="module" src="/settings.js?v=20261023-2"></script>
+  </body>
+</html>

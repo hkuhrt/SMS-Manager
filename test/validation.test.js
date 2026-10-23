@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   InputError,
+  assertSingleSmsFallback,
+  inspectSmsFallback,
   maskPhone,
   normalizeMobile,
   parseIsoDate,
@@ -56,5 +58,16 @@ test('rendert die neutrale serverseitige Erinnerung', () => {
 test('verlangt eine ausreichend starke Idempotenzkennung', () => {
   assert.equal(validateIdempotencyKey('12345678-abcd'), '12345678-abcd');
   assert.throws(() => validateIdempotencyKey('kurz'), InputError);
+});
+
+test('begrenzt den neutralen SMS-Fallback auf ein Segment', () => {
+  assert.deepEqual(inspectSmsFallback('Termin {ok}'), {
+    encoding: 'GSM-7',
+    units: 13,
+    limit: 160,
+    fitsSingleSms: true,
+  });
+  assert.throws(() => assertSingleSmsFallback('x'.repeat(161)), InputError);
+  assert.throws(() => assertSingleSmsFallback('🙂'.repeat(71)), InputError);
 });
 

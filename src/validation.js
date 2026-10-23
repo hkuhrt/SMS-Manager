@@ -1,4 +1,10 @@
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const GSM_BASIC = new Set([
+  ...'@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞ',
+  ...' !"#¤%&\'()*+,-./0123456789:;<=>?',
+  ...'¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà',
+]);
+const GSM_EXTENSION = new Set(['^', '{', '}', '\\', '[', '~', ']', '|', '€']);
 
 export function parseIsoDate(value, fieldName) {
   if (typeof value !== 'string' || !ISO_DATE.test(value)) {
@@ -107,6 +113,33 @@ export function renderNeutralReminder(template, appointment) {
     .replaceAll('{datum}', formattedDate)
     .replaceAll('{uhrzeit}', time)
     .trim();
+}
+
+export function inspectSmsFallback(message) {
+  let units = 0;
+  let encoding = 'GSM-7';
+  for (const character of message) {
+    if (GSM_BASIC.has(character)) units += 1;
+    else if (GSM_EXTENSION.has(character)) units += 2;
+    else {
+      encoding = 'UCS-2';
+      units = [...message].length;
+      break;
+    }
+  }
+  const limit = encoding === 'GSM-7' ? 160 : 70;
+  return { encoding, units, limit, fitsSingleSms: units <= limit };
+}
+
+export function assertSingleSmsFallback(message) {
+  const result = inspectSmsFallback(message);
+  if (!result.fitsSingleSms) {
+    throw new InputError(
+      `Der Text benötigt ${result.units} ${result.encoding === 'GSM-7' ? 'Zeicheneinheiten' : 'Unicode-Zeichen'}; `
+      + `für den SMS-Fallback sind höchstens ${result.limit} erlaubt.`,
+    );
+  }
+  return result;
 }
 
 export class InputError extends Error {

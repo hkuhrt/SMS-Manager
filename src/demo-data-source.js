@@ -22,6 +22,8 @@ function appointmentIdFor(date, index) {
 function createDemoContext(date, index) {
   const hasMobile = index < 22;
   const hasConsent = index < 20 || index >= 22;
+  const hasRcsConsent = hasConsent && index < 10;
+  const hasSmsConsent = hasConsent && !hasRcsConsent;
   const mobile = hasMobile ? `01500000${String(index + 1).padStart(3, '0')}` : null;
   const appointment = {
     id: appointmentIdFor(date, index),
@@ -44,7 +46,11 @@ function createDemoContext(date, index) {
     mobileNormalized: normalizeMobile(mobile),
     mobileMasked: maskPhone(mobile),
     hasConsent,
+    hasSmsConsent,
+    hasRcsConsent,
     markerConfigured: true,
+    smsMarkerConfigured: true,
+    rcsMarkerConfigured: true,
     isDemo: true,
     appointment,
   };
@@ -60,7 +66,11 @@ function publicAppointment(context) {
     hasMobile: Boolean(context.mobileNormalized),
     mobileMasked: context.mobileMasked,
     hasConsent: context.hasConsent,
+    hasSmsConsent: context.hasSmsConsent,
+    hasRcsConsent: context.hasRcsConsent,
     markerConfigured: true,
+    smsMarkerConfigured: true,
+    rcsMarkerConfigured: true,
     isDemo: true,
   };
 }

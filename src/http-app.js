@@ -9,6 +9,7 @@ import { integrationKeyMatches } from './integration-key.js';
 import { ReminderConflictError } from './reminder-service.js';
 import { SelectionError } from './selection-store.js';
 import {
+  assertSingleSmsFallback,
   InputError,
   parseOptionalPositiveInt,
   parsePatientNumber,
@@ -149,8 +150,8 @@ function validateTemplateInput(body) {
   if (name.length < 1 || name.length > 60) {
     throw new InputError('Der Vorlagenname muss zwischen 1 und 60 Zeichen lang sein.');
   }
-  if (templateBody.length < 10 || templateBody.length > 320) {
-    throw new InputError('Der SMS-Text muss zwischen 10 und 320 Zeichen lang sein.');
+  if (templateBody.length < 10 || templateBody.length > 160) {
+    throw new InputError('Der Nachrichtentext muss zwischen 10 und 160 Zeichen lang sein.');
   }
   const placeholders = [...templateBody.matchAll(/\{([^}]+)\}/g)].map((match) => match[1]);
   if (placeholders.some((value) => !['datum', 'uhrzeit'].includes(value))) {
@@ -159,22 +160,50 @@ function validateTemplateInput(body) {
   if (!templateBody.includes('{datum}') || !templateBody.includes('{uhrzeit}')) {
     throw new InputError('Die Vorlage muss die Platzhalter {datum} und {uhrzeit} enthalten.');
   }
+  assertSingleSmsFallback(renderNeutralReminder(templateBody, {
+    date: '2026-12-31',
+    time: '23:59:00',
+  }));
   return { name, body: templateBody };
+}
+
+function validateSettingsInput(body, maxRangeDays) {
+  const defaultRangeDays = body.defaultRangeDays;
+  const appointmentsPerPage = body.appointmentsPerPage;
+  const preferredZoneId = body.preferredZoneId;
+  const autoLoadAppointments = body.autoLoadAppointments;
+
+  if (!Number.isInteger(defaultRangeDays) || defaultRangeDays < 1 || defaultRangeDays > maxRangeDays) {
+    throw new InputError(`Der Standardzeitraum muss zwischen 1 und ${maxRangeDays} Tagen liegen.`);
+  }
+  if (![10, 20, 50].includes(appointmentsPerPage)) {
+    throw new InputError('Pro Seite sind ausschließlich 10, 20 oder 50 Termine erlaubt.');
+  }
+  if (preferredZoneId !== null && (!Number.isInteger(preferredZoneId) || preferredZoneId < 1)) {
+    throw new InputError('Die bevorzugte Terminzone ist ungültig.');
+  }
+  if (typeof autoLoadAppointments !== 'boolean') {
+    throw new InputError('Die Einstellung zum automatischen Laden ist ungültig.');
+  }
+  return { defaultRangeDays, appointmentsPerPage, preferredZoneId, autoLoadAppointments };
 }
 
 function templateForRequest(historyStore, templateId) {
   const template = templateId === undefined
     ? historyStore.getDefaultTemplate()
     : historyStore.getTemplate(validateTemplateId(templateId));
-  if (!template) throw new HttpError(404, 'Die ausgewählte SMS-Vorlage wurde nicht gefunden.');
+  if (!template) throw new HttpError(404, 'Die ausgewählte Nachrichtenvorlage wurde nicht gefunden.');
   return template;
 }
 
 function publicPatientContext(context, template) {
   const appointments = context.appointments.filter(appointmentCanBeReminded);
   const reasons = [];
-  if (!context.markerConfigured) reasons.push('Der Marker „SMS-Erinnerung erlaubt“ ist in MEDICAL OFFICE noch nicht angelegt.');
-  else if (!context.hasConsent) reasons.push('Beim Patienten ist der Marker „SMS-Erinnerung erlaubt“ nicht gesetzt.');
+  if (!(context.smsMarkerConfigured || context.rcsMarkerConfigured || context.markerConfigured)) {
+    reasons.push('Die Einwilligungsmarker für RCS und SMS sind in MEDICAL OFFICE noch nicht angelegt.');
+  } else if (!(context.hasRcsConsent || context.hasSmsConsent || context.hasConsent)) {
+    reasons.push('Beim Patienten ist weder der RCS- noch der SMS-Einwilligungsmarker gesetzt.');
+  }
   if (!context.mobileNormalized) reasons.push('Es ist keine gültige Mobilnummer im Mobilfunkfeld hinterlegt.');
   if (!appointments.length) reasons.push('In den kommenden 365 Tagen wurde kein Termin mit gültiger Uhrzeit gefunden.');
 
@@ -185,7 +214,11 @@ function publicPatientContext(context, template) {
       lastName: context.lastName,
       mobileMasked: context.mobileMasked,
       hasConsent: context.hasConsent,
+      hasSmsConsent: Boolean(context.hasSmsConsent ?? context.hasConsent),
+      hasRcsConsent: Boolean(context.hasRcsConsent),
       markerConfigured: context.markerConfigured,
+      smsMarkerConfigured: Boolean(context.smsMarkerConfigured ?? context.markerConfigured),
+      rcsMarkerConfigured: Boolean(context.rcsMarkerConfigured),
     },
     appointments: appointments.map((appointment) => ({
       ...appointment,
@@ -215,6 +248,15 @@ export function createHttpApplication({
   reminderService,
   selectionStore,
   integrationKey,
+  messagingConnectionTester = async () => ({
+    reachable: false,
+    journalAccessible: false,
+    agentFound: false,
+    testReady: false,
+    productionReady: false,
+    missing: ['SEVEN_API_KEY', 'SEVEN_RCS_AGENT_ID', 'SEVEN_SMS_SENDER'],
+    checkedAt: new Date().toISOString(),
+  }),
   updateStatusReader = async () => ({
     currentVersion: '0.0.0',
     latestVersion: null,
@@ -226,6 +268,7 @@ export function createHttpApplication({
   csrfToken = randomBytes(24).toString('base64url'),
 }) {
   const rateLimiter = new RateLimiter(config.limits.requestsPerMinute);
+  const historyMode = config.sms.mode === 'mock' ? 'mock' : 'live';
 
   async function handleApi(request, response, url) {
     rateLimiter.check(`${request.socket.remoteAddress}:${url.pathname.startsWith('/api/integrations/') ? 'integration' : 'app'}`);
@@ -235,7 +278,9 @@ export function createHttpApplication({
       json(response, 200, {
         csrfToken,
         smsMode: config.sms.mode,
-        consentMarker: config.consent.markerText,
+        consentMarker: config.consent.smsMarkerText || config.consent.markerText,
+        smsConsentMarker: config.consent.smsMarkerText || config.consent.markerText,
+        rcsConsentMarker: config.consent.rcsMarkerText,
         messageTemplate: defaultTemplate?.body || config.sms.template,
         messageTemplateId: defaultTemplate?.id || null,
       });
@@ -244,6 +289,63 @@ export function createHttpApplication({
 
     if (request.method === 'GET' && url.pathname === '/api/update-status') {
       json(response, 200, await updateStatusReader());
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/settings') {
+      json(response, 200, {
+        preferences: historyStore.getSettings(),
+        system: {
+          smsMode: config.sms.mode,
+          smsConsentMarker: config.consent.smsMarkerText || config.consent.markerText,
+          rcsConsentMarker: config.consent.rcsMarkerText,
+          historyRetentionDays: config.storage.historyRetentionDays,
+          maxRangeDays: config.limits.maxRangeDays,
+          loopbackOnly: true,
+          messaging: {
+            provider: 'seven',
+            mode: config.sms.mode,
+            apiKeyConfigured: Boolean(config.sms.apiKey),
+            rcsAgentId: config.sms.rcsAgentId || null,
+            smsSender: config.sms.sender || null,
+            fallback: 'sms',
+            rcsTtlMinutes: config.sms.rcsTtlMinutes,
+            statusSyncMinutes: config.sms.statusSyncMinutes,
+            locallyConfigured: Boolean(config.sms.apiKey && config.sms.rcsAgentId && config.sms.sender),
+            deliverySync: typeof reminderService.getDeliverySyncStatus === 'function'
+              ? reminderService.getDeliverySyncStatus()
+              : null,
+          },
+        },
+      });
+      return;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/messaging/test') {
+      requireBrowserPostSecurity(request, csrfToken);
+      await readJsonBody(request, config.limits.requestBodyBytes);
+      try {
+        json(response, 200, { connection: await messagingConnectionTester() });
+      } catch {
+        throw new HttpError(
+          502,
+          'Die seven-Verbindung konnte nicht bestätigt werden. Bitte API-Schlüssel, Berechtigungen und Internetverbindung prüfen.',
+        );
+      }
+      return;
+    }
+
+    if (request.method === 'PUT' && url.pathname === '/api/settings') {
+      requireBrowserPostSecurity(request, csrfToken);
+      const body = await readJsonBody(request, config.limits.requestBodyBytes);
+      const settings = validateSettingsInput(body, config.limits.maxRangeDays);
+      if (settings.preferredZoneId !== null) {
+        const zones = await dataSource.listZones();
+        if (!zones.some((zone) => Number(zone.id) === settings.preferredZoneId)) {
+          throw new InputError('Die ausgewählte Terminzone ist nicht mehr vorhanden.');
+        }
+      }
+      json(response, 200, { preferences: historyStore.updateSettings(settings) });
       return;
     }
 
@@ -256,7 +358,7 @@ export function createHttpApplication({
       requireBrowserPostSecurity(request, csrfToken);
       const body = await readJsonBody(request, config.limits.requestBodyBytes);
       if (historyStore.listTemplates().length >= 20) {
-        throw new HttpError(409, 'Es können höchstens 20 SMS-Vorlagen gespeichert werden.');
+        throw new HttpError(409, 'Es können höchstens 20 Nachrichtenvorlagen gespeichert werden.');
       }
       try {
         json(response, 201, { template: historyStore.createTemplate(validateTemplateInput(body)) });
@@ -273,7 +375,7 @@ export function createHttpApplication({
       const body = await readJsonBody(request, config.limits.requestBodyBytes);
       try {
         const template = historyStore.updateTemplate(validateTemplateId(templateMatch[1]), validateTemplateInput(body));
-        if (!template) throw new HttpError(404, 'Die SMS-Vorlage wurde nicht gefunden.');
+        if (!template) throw new HttpError(404, 'Die Nachrichtenvorlage wurde nicht gefunden.');
         json(response, 200, { template });
       } catch (error) {
         if (String(error.message).includes('UNIQUE')) throw new HttpError(409, 'Dieser Vorlagenname ist bereits vergeben.');
@@ -287,7 +389,7 @@ export function createHttpApplication({
       requireBrowserPostSecurity(request, csrfToken);
       await readJsonBody(request, config.limits.requestBodyBytes);
       const template = historyStore.setDefaultTemplate(validateTemplateId(defaultTemplateMatch[1]));
-      if (!template) throw new HttpError(404, 'Die SMS-Vorlage wurde nicht gefunden.');
+      if (!template) throw new HttpError(404, 'Die Nachrichtenvorlage wurde nicht gefunden.');
       json(response, 200, { template });
       return;
     }
@@ -295,7 +397,7 @@ export function createHttpApplication({
     if (request.method === 'DELETE' && templateMatch) {
       requireBrowserPostSecurity(request, csrfToken);
       const result = historyStore.deleteTemplate(validateTemplateId(templateMatch[1]));
-      if (result.reason === 'missing') throw new HttpError(404, 'Die SMS-Vorlage wurde nicht gefunden.');
+      if (result.reason === 'missing') throw new HttpError(404, 'Die Nachrichtenvorlage wurde nicht gefunden.');
       if (result.reason === 'default') throw new HttpError(409, 'Die Standardvorlage kann nicht gelöscht werden. Bitte zuerst eine andere Vorlage als Standard festlegen.');
       json(response, 200, { status: 'deleted' });
       return;
@@ -310,7 +412,10 @@ export function createHttpApplication({
         port: Number(health.port),
         readOnly: true,
         smsMode: config.sms.mode,
-        markerConfigured: Boolean(Number(health.markerConfigured)),
+        smsMarkerConfigured: Boolean(Number(health.smsMarkerConfigured ?? health.markerConfigured)),
+        rcsMarkerConfigured: Boolean(Number(health.rcsMarkerConfigured)),
+        markerConfigured: Boolean(Number(health.smsMarkerConfigured ?? health.markerConfigured))
+          || Boolean(Number(health.rcsMarkerConfigured)),
       });
       return;
     }
@@ -334,7 +439,7 @@ export function createHttpApplication({
       const eligible = result.appointments.filter((item) => item.hasPatient && item.hasMobile && item.hasConsent).length;
       const reminderStatuses = historyStore.appointmentStatuses(
         result.appointments.map((item) => item.id),
-        config.sms.mode,
+        historyMode,
       );
       const appointments = result.appointments.map((item) => {
         let reminderStatus = reminderStatuses.get(item.id) || {
