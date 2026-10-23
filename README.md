@@ -5,11 +5,13 @@ Lokale Web-App zum sicheren Vorbereiten von Terminerinnerungen aus MEDICAL OFFIC
 ## Aktueller Funktionsumfang
 
 - Kalenderansicht mit einem Standardzeitraum von sieben Tagen
+- paginierte Terminliste mit wahlweise 10, 20 oder 50 Einträgen pro Seite
 - ausschließlich `patstamm.FTelefonmobil`, kein Rückgriff auf Privat- oder Dienstnummern
 - SMS-Freigabe über den Patientenmarker `SMS-Erinnerung erlaubt`
 - MEDICAL-OFFICE-Button für den aktuell geöffneten Patienten über `AKTPAT.TXT`
 - Einzelpatienten-Ansicht mit bis zu 365 Tagen Vorschau und vorausgewähltem nächstem Termin
 - großer Prüfdialog mit Patientin, Terminzeit, maskierter Zielnummer sowie Demo- und Wiederholungskennzeichnung
+- lokaler SMS-Vorlagenmanager mit bis zu 20 Vorlagen, geschützter Standardvorlage und den Platzhaltern `{datum}` und `{uhrzeit}`
 - atomarer Doppelversandschutz je Termin und Versandmodus für 90 Tage, zusätzlich zur Idempotenzkennung
 - einzeln und zweistufig bestätigbare Wiederholungen, die im Protokoll markiert werden
 - teilfehlertoleranter Sammelversand: Erfolge bleiben protokolliert, Fehler und nicht versuchte Termine werden wieder freigegeben
@@ -46,6 +48,7 @@ Der Helfer akzeptiert nur eine höchstens 30 Sekunden alte Datei und liest aussc
 - `GET /api/health` – Datenbank-, Marker- und Testmodusstatus
 - `GET /api/session` – flüchtige CSRF-Kennung und neutrale SMS-Vorlage
 - `GET /api/appointments?from=JJJJ-MM-TT&to=JJJJ-MM-TT&zone=ID` – Kalenderansicht
+- `GET /api/templates` sowie `POST/PUT/DELETE /api/templates` – lokale Vorlagenverwaltung
 - `POST /api/integrations/medical-office/selections` – authentifizierte Übergabe des lokalen Helfers
 - `GET /api/integrations/medical-office/selections/:launchId` – Einzelpatienten-Kontext
 - `POST /api/reminders/single` – manuell bestätigter Einzel-Testversand
