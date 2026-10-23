@@ -50,9 +50,11 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     },
   };
   let providerCalls = 0;
+  let providerMessage = '';
   const provider = {
-    async send() {
+    async send({ message }) {
       providerCalls += 1;
+      providerMessage = message;
       return { status: 'simulated', providerReference: 'mock-test' };
     },
   };
@@ -93,6 +95,51 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
   const { port } = server.address();
   const base = `http://127.0.0.1:${port}`;
   try {
+    const templatesResponse = await fetch(`${base}/api/templates`);
+    assert.equal(templatesResponse.status, 200);
+    const initialTemplates = (await templatesResponse.json()).templates;
+    assert.equal(initialTemplates.length, 1);
+    assert.equal(initialTemplates[0].isDefault, true);
+
+    const invalidTemplate = await fetch(`${base}/api/templates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: JSON.stringify({ name: 'Ungültig', body: 'Termin ohne Platzhalter' }),
+    });
+    assert.equal(invalidTemplate.status, 400);
+
+    const createTemplate = await fetch(`${base}/api/templates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: JSON.stringify({
+        name: 'Kurze Vorlage',
+        body: 'Praxis Recker: Termin am {datum} um {uhrzeit} Uhr.',
+      }),
+    });
+    assert.equal(createTemplate.status, 201);
+    const customTemplate = (await createTemplate.json()).template;
+
+    const setDefault = await fetch(`${base}/api/templates/${customTemplate.id}/default`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: base,
+        'X-CSRF-Token': 'csrf-test-token',
+      },
+      body: '{}',
+    });
+    assert.equal(setDefault.status, 200);
+    const sessionAfterTemplateChange = await fetch(`${base}/api/session`).then((response) => response.json());
+    assert.equal(sessionAfterTemplateChange.messageTemplateId, customTemplate.id);
+
     const unauthorised = await fetch(`${base}/api/integrations/medical-office/selections`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -117,6 +164,7 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     const context = await contextResponse.json();
     assert.equal(context.patient.firstName, 'Erika');
     assert.equal(context.patient.mobileMasked, '•••• 4567');
+    assert.match(context.appointments[0].messagePreview, /^Praxis Recker: Termin am /);
     assert.equal(Object.hasOwn(context.patient, 'patientNumber'), false);
     assert.equal(Object.hasOwn(context.patient, 'mobile'), false);
 
@@ -133,6 +181,7 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     assert.equal(sendResponse.status, 200);
     assert.equal((await sendResponse.json()).sent, 1);
     assert.equal(providerCalls, 1);
+    assert.match(providerMessage, /^Praxis Recker: Termin am /);
 
     const replay = await reminderService.send({
       appointmentIds: [7],
