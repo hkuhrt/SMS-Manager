@@ -18,6 +18,8 @@ const state = {
 
 const elements = {
   connection: document.querySelector('#connection'),
+  appVersion: document.querySelector('#app-version'),
+  updateWarning: document.querySelector('#update-warning'),
   from: document.querySelector('#from-date'),
   to: document.querySelector('#to-date'),
   zone: document.querySelector('#zone-filter'),
@@ -167,6 +169,21 @@ async function checkConnection() {
   } catch (error) {
     elements.connection.className = 'connection offline';
     elements.connection.innerHTML = `<svg class="icon" aria-hidden="true"><use href="#icon-database"></use></svg><span>${escapeHtml(error.message)}</span>`;
+  }
+}
+
+async function loadUpdateStatus() {
+  try {
+    const result = await api('/api/update-status');
+    elements.appVersion.textContent = `Version ${result.currentVersion}`;
+    if (result.state === 'failed' || result.state === 'blocked') {
+      elements.updateWarning.textContent = result.message;
+      elements.updateWarning.hidden = false;
+    } else {
+      elements.updateWarning.hidden = true;
+    }
+  } catch {
+    elements.appVersion.textContent = 'Version unbekannt';
   }
 }
 
@@ -639,4 +656,4 @@ elements.reviewDialog.addEventListener('cancel', (event) => {
 
 setDefaultRange();
 await loadSession();
-await Promise.all([checkConnection(), loadZones(), loadTemplates()]);
+await Promise.all([checkConnection(), loadZones(), loadTemplates(), loadUpdateStatus()]);

@@ -7,6 +7,7 @@ import { loadOrCreateIntegrationKey } from './integration-key.js';
 import { ReminderService } from './reminder-service.js';
 import { SelectionStore } from './selection-store.js';
 import { createSmsProvider } from './sms-provider.js';
+import { createUpdateStatusReader } from './update-status.js';
 
 export async function startServer(overrides = {}) {
   assertRuntimeConfig();
@@ -29,6 +30,9 @@ export async function startServer(overrides = {}) {
     template: config.sms.template,
     mode: config.sms.mode,
   });
+  const updateStatusReader = overrides.updateStatusReader || createUpdateStatusReader({
+    dataDirectory: config.storage.dataDirectory,
+  });
   const server = createHttpApplication({
     config,
     dataSource,
@@ -36,6 +40,7 @@ export async function startServer(overrides = {}) {
     reminderService,
     selectionStore,
     integrationKey,
+    updateStatusReader,
     csrfToken: randomBytes(24).toString('base64url'),
   });
   const purgeTimer = setInterval(() => {

@@ -88,6 +88,14 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
     reminderService,
     selectionStore,
     integrationKey: 'integration-secret',
+    updateStatusReader: async () => ({
+      currentVersion: '0.3.0',
+      latestVersion: '0.3.0',
+      state: 'current',
+      checkedAt: '2026-10-23T18:00:00.000Z',
+      installedAt: null,
+      message: 'Version 0.3.0 ist aktuell.',
+    }),
     csrfToken: 'csrf-test-token',
   });
 
@@ -95,6 +103,10 @@ test('MEDICAL-OFFICE-Button übergibt nur eine kurzlebige ID und sendet idempote
   const { port } = server.address();
   const base = `http://127.0.0.1:${port}`;
   try {
+    const updateStatusResponse = await fetch(`${base}/api/update-status`);
+    assert.equal(updateStatusResponse.status, 200);
+    assert.equal((await updateStatusResponse.json()).currentVersion, '0.3.0');
+
     const templatesResponse = await fetch(`${base}/api/templates`);
     assert.equal(templatesResponse.status, 200);
     const initialTemplates = (await templatesResponse.json()).templates;

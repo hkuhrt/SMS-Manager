@@ -686,6 +686,17 @@ tbody tr:hover { background: #fffafb; }
 .history-retention { padding-top: 11px; border-top: 1px solid var(--line); }
 
 .history-header { padding-bottom: 10px; }
+
+.update-warning {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid #e5b36c;
+  border-radius: var(--control-radius);
+  background: #fff8e8;
+  color: #7b4a0c;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
 .history-topbar {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr) auto;

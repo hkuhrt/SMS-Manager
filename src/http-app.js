@@ -215,6 +215,14 @@ export function createHttpApplication({
   reminderService,
   selectionStore,
   integrationKey,
+  updateStatusReader = async () => ({
+    currentVersion: '0.0.0',
+    latestVersion: null,
+    state: 'never-checked',
+    checkedAt: null,
+    installedAt: null,
+    message: 'Es wurde noch nicht nach Updates gesucht.',
+  }),
   csrfToken = randomBytes(24).toString('base64url'),
 }) {
   const rateLimiter = new RateLimiter(config.limits.requestsPerMinute);
@@ -231,6 +239,11 @@ export function createHttpApplication({
         messageTemplate: defaultTemplate?.body || config.sms.template,
         messageTemplateId: defaultTemplate?.id || null,
       });
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/update-status') {
+      json(response, 200, await updateStatusReader());
       return;
     }
 

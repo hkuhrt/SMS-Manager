@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Node.js 22 einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Versionstag validieren
+        shell: powershell
+        run: |
+          $version = [string]((Get-Content package.json -Raw | ConvertFrom-Json).version)
+          if ($env:GITHUB_REF_NAME -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Nur stabile Tags im Format vX.Y.Z sind erlaubt."
+          }
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME stimmt nicht mit package.json ($version) ueberein."
+          }
+
+      - name: Anwendung testen
+        run: node --test
+
+      - name: Updater testen
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test-updater.ps1
+
+      - name: Releasepaket bauen
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build-release.ps1 -OutputDirectory dist -Commit $env:GITHUB_SHA
+
+      - name: Releasepaket validieren
+        shell: powershell
+        run: |
+          $version = [string]((Get-Content package.json -Raw | ConvertFrom-Json).version)
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test-release-package.ps1 `
+            -ArchivePath "dist\SMSReminder-v$version.zip" -ExpectedVersion $version
+
+      - name: GitHub-Release veroeffentlichen
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = [string]((Get-Content package.json -Raw | ConvertFrom-Json).version)
+          gh release create $env:GITHUB_REF_NAME `
+            "dist\SMSReminder-v$version.zip" `
+            "dist\SMSReminder-v$version.zip.sha256" `
+            --verify-tag --title "SMSReminder v$version" --generate-notes

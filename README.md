@@ -28,6 +28,8 @@ Lokale Web-App zum sicheren Vorbereiten von Terminerinnerungen aus MEDICAL OFFIC
 
 Die App verwendet die lokale `.env`. Datenbankkennwörter und die erzeugte Integrationskennung sind von Git ausgeschlossen.
 
+Vor jedem manuellen Start wird nach einem stabilen GitHub-Release gesucht. Nur ein sauberer `main`-Checkout wird per Fast-Forward aktualisiert. Bei lokalen Änderungen oder fehlendem Internet startet die vorhandene Version weiter; Details stehen in `data\update.log`.
+
 ## MEDICAL-OFFICE-Marker einrichten
 
 In MEDICAL OFFICE einmal einen Patientenmarker mit dem **exakten Namen** `SMS-Erinnerung erlaubt` anlegen. Die App ermittelt dessen interne ID automatisch. Nur Patienten, bei denen dieser Marker gesetzt ist, sind auswählbar.
@@ -46,6 +48,7 @@ Der Helfer akzeptiert nur eine höchstens 30 Sekunden alte Datei und liest aussc
 ## API
 
 - `GET /api/health` – Datenbank-, Marker- und Testmodusstatus
+- `GET /api/update-status` – lokale App-Version und letzter automatischer Update-Status
 - `GET /api/session` – flüchtige CSRF-Kennung und neutrale SMS-Vorlage
 - `GET /api/appointments?from=JJJJ-MM-TT&to=JJJJ-MM-TT&zone=ID` – Kalenderansicht
 - `GET /api/templates` sowie `POST/PUT/DELETE /api/templates` – lokale Vorlagenverwaltung
@@ -79,6 +82,16 @@ Für den automatischen Start ist eine WinSW-Konfiguration enthalten.
 
 Das Skript kopiert App und Node-Laufzeit nach `C:\ProgramData\PraxisRecker\SMSReminder`, beschränkt die Windows-Dateirechte, installiert `PraxisReckerSMSReminder` als `LocalService`, startet den Dienst und legt eine Desktop-Verknüpfung an.
 
+Zusätzlich wird die SYSTEM-Aufgabe `PraxisReckerSMSReminderUpdate` eingerichtet. Sie prüft zwei Minuten nach dem Windows-Start und täglich um 03:00 Uhr auf stabile Releases. Programmdateien werden erst nach erfolgreicher Prüfsummen- und Manifestprüfung ausgetauscht. `.env`, `data`, Node-Laufzeit und WinSW bleiben erhalten; ein fehlgeschlagener Versionscheck stellt die vorherige Version wieder her.
+
+## Updates veröffentlichen
+
+1. Die Version in `package.json` erhöhen und die Änderung nach `main` pushen.
+2. Einen passenden Tag setzen, beispielsweise `git tag v0.3.0`.
+3. Den Tag mit `git push origin v0.3.0` veröffentlichen.
+
+Der GitHub-Workflow führt alle Tests aus, erzeugt ein geprüftes Release-ZIP samt SHA-256-Datei und veröffentlicht das stabile Release. Tags und Paketversion müssen exakt übereinstimmen. Vorabversionen und Downgrades werden vom Updater ignoriert.
+
 ## Konfiguration
 
 Siehe `.env.example`. Wichtige Werte:
@@ -90,6 +103,7 @@ Siehe `.env.example`. Wichtige Werte:
 - `HISTORY_RETENTION_DAYS`: standardmäßig 90 Tage
 - `SINGLE_PATIENT_LOOKAHEAD_DAYS`: standardmäßig 365 Tage
 - `SMS_MODE`: bleibt bis zur bewussten Anbieterentscheidung auf `mock`
+- `AUTO_UPDATE`: standardmäßig `true`; mit `false` werden automatische Updateprüfungen vollständig deaktiviert
 
 ## Tests
 
@@ -97,6 +111,6 @@ Siehe `.env.example`. Wichtige Werte:
 node --test
 ```
 
-Die Tests decken AKTPAT-Parsing und Frischeprüfung, kurzlebige Übergaben, API-Authentifizierung, CSRF, Datenminimierung, Mobilnummern-Normalisierung, Idempotenz, atomare Terminreservierungen, getrennte Versandmodi, Wiederholungen, Teilfehler und die SQLite-Historie ab.
+Die Tests decken AKTPAT-Parsing und Frischeprüfung, kurzlebige Übergaben, API-Authentifizierung, CSRF, Datenminimierung, Mobilnummern-Normalisierung, Idempotenz, atomare Terminreservierungen, getrennte Versandmodi, Wiederholungen, Teilfehler, die SQLite-Historie sowie Versions- und Releasevalidierung ab.
 
 Für einen Oberflächentest im Kalender die Zone `TEST · 25 Mustertermine` auswählen. Die Termine werden für das im Feld „Von“ gewählte Datum erzeugt. 20 Einträge sind auswählbar, drei besitzen absichtlich keine Mobilnummer und zwei keine SMS-Freigabe. Es werden keine Datensätze in MEDICAL OFFICE angelegt oder verändert.

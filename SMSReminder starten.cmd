@@ -18,6 +18,12 @@ if not exist "%NODE_EXE%" (
 )
 
 cd /d "%~dp0"
+
+echo Suche nach einem freigegebenen Update ...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\update.ps1" -Mode Checkout -ApplicationDirectory "%~dp0"
+if errorlevel 1 echo Update wurde uebersprungen. Details stehen im lokalen Update-Protokoll.
+echo.
+
 echo SMSReminder wird gestartet ...
 echo Die Seite oeffnet sich gleich automatisch im Browser.
 echo Dieses Fenster waehrend der Nutzung geoeffnet lassen.
