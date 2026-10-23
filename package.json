@@ -1,0 +1,16 @@
+{
+  "name": "medical-office-sms-reminder",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Lokale, lesende Terminansicht für SMS-Erinnerungen aus MEDICAL OFFICE.",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "test": "node --test",
+    "bridge": "node --env-file-if-exists=.env bridge/medical-office.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

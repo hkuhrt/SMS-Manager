@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Patientenerinnerung · Praxis Recker</title>
+    <link rel="icon" type="image/png" href="/assets/praxis-sabrina-recker-logo.png" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-3" />
+  </head>
+  <body class="single-page">
+    <header class="app-header single-header">
+      <div class="brand-row">
+        <a href="/" aria-label="Zur Kalenderübersicht">
+          <img class="practice-logo" src="/assets/praxis-sabrina-recker-logo.png" alt="Frauenarztpraxis Sabrina Recker" width="600" height="234" />
+        </a>
+        <div class="status-stack">
+          <span class="mode-badge">Testmodus · kein SMS-Versand</span>
+          <a class="back-link" href="/">Zur Kalenderübersicht</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="single-main">
+      <section class="single-panel" aria-labelledby="single-title">
+        <div class="single-intro">
+          <p class="section-kicker">Aus MEDICAL OFFICE übernommen</p>
+          <h1 id="single-title">Eine Erinnerung vorbereiten</h1>
+          <p>Prüfen Sie Patientin, Termin und Vorschau. Erst Ihre Bestätigung löst den Testvorgang aus.</p>
+        </div>
+
+        <div id="single-loading" class="single-loading" aria-live="polite">Patientendaten werden sicher geladen …</div>
+        <div id="single-error" class="message error single-message" hidden></div>
+
+        <div id="single-content" hidden>
+          <article class="patient-card">
+            <div>
+              <span class="card-label">Ausgewählte Patientin</span>
+              <strong id="single-patient">–</strong>
+            </div>
+            <div>
+              <span class="card-label">Mobilnummer</span>
+              <strong id="single-mobile">–</strong>
+            </div>
+            <div>
+              <span class="card-label">SMS-Freigabe</span>
+              <strong id="single-consent">–</strong>
+            </div>
+          </article>
+
+          <div id="single-reasons" class="eligibility-reasons" hidden></div>
+
+          <fieldset id="appointment-fieldset" class="appointment-options">
+            <legend>Termin auswählen</legend>
+            <div id="single-appointments"></div>
+          </fieldset>
+
+          <section class="single-preview" aria-labelledby="single-preview-title">
+            <span class="card-label">SMS-Vorschau</span>
+            <h2 id="single-preview-title">Neutrale Terminerinnerung</h2>
+            <p id="single-preview-text">–</p>
+          </section>
+
+          <div class="single-actions">
+            <button id="single-cancel" class="button button-secondary" type="button">Abbrechen</button>
+            <button id="single-send" class="button button-primary" type="button" disabled>Testversand verbindlich bestätigen</button>
+          </div>
+          <p class="provider-note">Im Testmodus wird keine SMS übertragen. Der Vorgang wird ausschließlich lokal protokolliert.</p>
+        </div>
+
+        <div id="single-success" class="success-panel" hidden>
+          <span class="success-icon" aria-hidden="true">✓</span>
+          <h2>Testversand wurde simuliert</h2>
+          <p>Es wurde keine echte SMS versendet. Der Testvorgang steht jetzt in der lokalen Historie.</p>
+          <a class="button button-primary" href="/">Zur Kalenderübersicht</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Praxis Recker · interne Anwendung</span>
+      <span>Patientendaten bleiben auf diesem Rechner</span>
+    </footer>
+    <script type="module" src="/single.js?v=20261023-2"></script>
+  </body>
+</html>

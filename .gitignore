@@ -1,0 +1,9 @@
+node_modules/
+.env
+data/
+runtime/
+tools/*.exe
+service/*.log
+*.log
+.DS_Store
+

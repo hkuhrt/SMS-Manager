@@ -1,0 +1,25 @@
+<service>
+  <id>PraxisReckerSMSReminder</id>
+  <name>Praxis Recker SMS Reminder</name>
+  <description>Lokale, lesende MEDICAL-OFFICE-Terminerinnerung im sicheren Testmodus.</description>
+  <executable>%BASE%\runtime\node.exe</executable>
+  <arguments>--env-file=&quot;%BASE%\.env&quot; &quot;%BASE%\src\server.js&quot;</arguments>
+  <workingdirectory>%BASE%</workingdirectory>
+  <startmode>Automatic</startmode>
+  <stoptimeout>15 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <onfailure action="restart" delay="30 sec" />
+  <resetfailure>1 hour</resetfailure>
+  <logpath>%BASE%\data\service-logs</logpath>
+  <log mode="roll-by-size-time">
+    <sizeThreshold>10240</sizeThreshold>
+    <pattern>yyyyMMdd</pattern>
+    <autoRollAtTime>00:00:00</autoRollAtTime>
+    <zipOlderThanNumDays>14</zipOlderThanNumDays>
+    <zipDateFormat>yyyyMMdd</zipDateFormat>
+  </log>
+  <serviceaccount>
+    <username>NT AUTHORITY\LocalService</username>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+</service>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Versandprotokoll · Frauenarztpraxis Sabrina Recker</title>
+    <link rel="icon" type="image/png" href="/assets/praxis-sabrina-recker-logo.png" />
+    <link rel="stylesheet" href="/styles.css?v=20261023-6" />
+  </head>
+  <body class="history-page">
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.4 8.8A2.1 2.1 0 0 0 6.4 21h11.2a2.1 2.1 0 0 0 1.8-3.2L14 9V3M7.8 15h8.4" /></symbol>
+      <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7" /></symbol>
+      <symbol id="icon-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l3 2" /></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7h-5V2M4 17h5v5M19 12a7 7 0 0 0-12-5L4 10M5 12a7 7 0 0 0 12 5l3-3" /></symbol>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6M9 12h12" /></symbol>
+      <symbol id="icon-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3" /></symbol>
+      <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 9v4M12 17h.01" /></symbol>
+    </svg>
+
+    <header class="app-header history-header">
+      <div class="history-topbar">
+        <a class="history-brand" href="/" aria-label="Zur Terminübersicht">
+          <img class="practice-logo" src="/assets/praxis-sabrina-recker-logo.png" alt="Frauenarztpraxis Sabrina Recker" width="600" height="234" />
+        </a>
+        <div class="history-title">
+          <p class="eyebrow"><svg class="icon" aria-hidden="true"><use href="#icon-history" /></svg> Lokales Protokoll</p>
+          <h1>Versandprotokoll</h1>
+          <p class="subtitle">Minimierte technische Nachweise der letzten Testvorgänge.</p>
+        </div>
+        <a class="button button-secondary button-small history-back" href="/"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left" /></svg> Zur Terminübersicht</a>
+      </div>
+    </header>
+
+    <main class="history-main">
+      <section class="history-panel" aria-labelledby="history-title">
+        <div class="section-heading compact">
+          <div class="heading-with-icon">
+            <span class="section-icon"><svg class="icon" aria-hidden="true"><use href="#icon-history" /></svg></span>
+            <div>
+              <p class="section-kicker">90 Tage lokal gespeichert</p>
+              <h2 id="history-title">Letzte Testvorgänge</h2>
+            </div>
+          </div>
+          <button class="button button-secondary button-small" id="history-refresh" type="button"><svg class="icon" aria-hidden="true"><use href="#icon-refresh" /></svg><span>Aktualisieren</span></button>
+        </div>
+        <div id="history-list" class="history-list" aria-live="polite">
+          <p class="history-empty">Protokoll wird geladen …</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Frauenarztpraxis Sabrina Recker · interne Anwendung</span>
+      <div class="footer-status">
+        <span class="mode-badge"><svg class="icon" aria-hidden="true"><use href="#icon-flask" /></svg> Testmodus · kein SMS-Versand</span>
+        <span aria-hidden="true">·</span>
+        <div class="connection" id="connection" aria-live="polite">
+          <svg class="icon" aria-hidden="true"><use href="#icon-database" /></svg>
+          <span>Verbindung wird geprüft …</span>
+        </div>
+      </div>
+    </footer>
+    <script type="module" src="/history.js?v=20261023-2"></script>
+  </body>
+</html>
